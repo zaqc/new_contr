@@ -319,6 +319,12 @@ assign	def_on = 1'b1;
 //dac volume & sound clock assign to clk
 assign	clk_dac = clk;
 
+eth_pll eth_pll_unit(
+	.inclk0(rx_clk),
+	.c1(tx_clk),
+	.c2(gtx_clk)
+);
+
 //control transmitters, reference clock clkx[n] use dcfifo to convert to clk
 wire	[31:0] cntr_data [0:1];	//command to transmit
 wire	[1:0] cntr_valid;		//command valid
