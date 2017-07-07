@@ -256,7 +256,39 @@ input	[3:0] rxd;
 output	phyrst_n;
 input	led_100;
 
-assign phyrst_n = 1'b1;
+assign phyrst_n = &phy_rst_cntr;
+reg		[27:0]		phy_rst_cntr;
+initial phy_rst_cntr <= 28'd0;
+always @ (posedge clk)
+	if(~(&phy_rst_cntr))
+		phy_rst_cntr <= phy_rst_cntr + 1'b1;
+		
+//============================================================================
+//	NIOS_II
+//============================================================================
+
+nios_sys nios_sys_unit(
+	.clk_clk(clk)
+
+);
+
+//----------------------------------------------------------------------------
+
+//============================================================================
+//	ETH_TOP
+//============================================================================
+
+eth_rgmii eth_rgmii_unit(
+	.i_rx_clk(rx_clk),
+	.i_rx_vl(rx_dv),
+	.i_rx_data(rxd),
+	
+	.o_tx_en(tx_en),
+	.o_tx_data(txd),
+	.o_gtx_clk(gtx_clk)
+);
+
+//----------------------------------------------------------------------------
 
 //COM external ports
 //COM1 debugging (LVTTL)
@@ -318,12 +350,6 @@ assign	reset_m_n = reset_n;
 assign	def_on = 1'b1;
 //dac volume & sound clock assign to clk
 assign	clk_dac = clk;
-
-eth_pll eth_pll_unit(
-	.inclk0(rx_clk),
-	.c1(tx_clk),
-	.c2(gtx_clk)
-);
 
 //control transmitters, reference clock clkx[n] use dcfifo to convert to clk
 wire	[31:0] cntr_data [0:1];	//command to transmit
