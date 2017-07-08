@@ -268,9 +268,22 @@ always @ (posedge clk)
 //============================================================================
 
 nios_sys nios_sys_unit(
-	.clk_clk(clk)
+	.clk_clk(clk),
 
+	.cmd_addr(cmd_addr),
+	.cmd_data(cmd_data),
+	.cmd_wr(cmd_wr),
+	
+	.nios_clk_clk(nios_clk),
+	.nios_reset_reset(nios_reset)
 );
+
+wire			[31:0]		cmd_data;
+wire			[7:0]			cmd_addr;
+wire							cmd_wr;
+
+wire							nios_clk;
+wire							nios_reset;
 
 //----------------------------------------------------------------------------
 
@@ -279,13 +292,22 @@ nios_sys nios_sys_unit(
 //============================================================================
 
 eth_rgmii eth_rgmii_unit(
+	.rst_n(~nios_reset),
+	
 	.i_rx_clk(rx_clk),
 	.i_rx_vl(rx_dv),
 	.i_rx_data(rxd),
 	
 	.o_tx_en(tx_en),
 	.o_tx_data(txd),
-	.o_gtx_clk(gtx_clk)
+	.o_gtx_clk(gtx_clk),
+	
+	.i_cmd_clk(nios_clk),
+	.i_cmd_wr(cmd_wr),
+	.i_cmd_addr(cmd_addr),
+	.i_cmd_data(cmd_data),
+	
+	.o_green_led(leds_n)
 );
 
 //----------------------------------------------------------------------------
@@ -424,7 +446,7 @@ spi_dac snd_dac(
 //test leds
 
 reg	[31:0] tcounter;
-assign leds_n = ~tcounter[31:24];
+//assign leds_n = ~tcounter[31:24];
 
 always@(posedge rx_clk)
 begin

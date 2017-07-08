@@ -1,4 +1,6 @@
 module eth_rgmii ( 
+	input					rst_n,
+	
 	input					i_rx_clk,
 	input					i_rx_vl,
 	input		[3:0]		i_rx_data,
@@ -9,8 +11,10 @@ module eth_rgmii (
 	
 	input					i_cmd_clk,
 	input					i_cmd_wr,
-	input					i_cmd_addr,
-	input					i_cmd_data
+	input		[7:0]		i_cmd_addr,
+	input		[31:0]	i_cmd_data,
+	
+	output	[7:0]		o_green_led
 );
 
 //----------------------------------------------------------------------------
@@ -63,7 +67,7 @@ eth_out eth_out_unit(
 //----------------------------------------------------------------------------
 
 eth_top eth_top_unit(
-	.rst_n(cmd_reset_n),
+	.rst_n(rst_n),
 	
 	.clk(i_cmd_clk),
 	.i_cmd_addr(i_cmd_addr),
@@ -78,9 +82,9 @@ eth_top eth_top_unit(
 	
 	.i_tx_clk(pll_clk_tx),
 	.o_tx_data(tx_data),
-	.o_tx_en(tx_en) //,
+	.o_tx_en(tx_en),
 		
-	//.o_green_led(LEDG[8:1])
+	.o_green_led(o_green_led)
 );
 
 //----------------------------------------------------------------------------

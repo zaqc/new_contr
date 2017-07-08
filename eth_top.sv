@@ -45,6 +45,17 @@ wire			[7:0]			cmd_addr;
 wire			[31:0]		cmd_data;
 wire							cmd_wr;
 
+reg			[7:0]			led_reg;
+
+always_ff @ (posedge clk or negedge rst_n)
+	if(~rst_n)
+		led_reg <= 8'hAA;
+	else
+		if(i_cmd_wr)
+			led_reg <= i_cmd_addr;
+			
+assign o_green_led = ~led_reg;
+
 //----------------------------------------------------------------------------
 
 command command_unit(
@@ -110,7 +121,7 @@ always_ff @ (posedge i_rx_clk or negedge rst_n)
 
 wire			[1:0]			pkt_type;
 
-assign o_green_led = r_pkt_count;
+// assign o_green_led = r_pkt_count;
 
 //----------------------------------------------------------------------------
 

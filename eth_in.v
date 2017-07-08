@@ -63,7 +63,7 @@ module eth_in (
 				.sclr (1'b0),
 				.sset (1'b0));
 	defparam
-		ALTDDIO_IN_component.intended_device_family = "Cyclone IV E",
+		ALTDDIO_IN_component.intended_device_family = "Cyclone III",
 		ALTDDIO_IN_component.invert_input_clocks = "OFF",
 		ALTDDIO_IN_component.lpm_hint = "UNUSED",
 		ALTDDIO_IN_component.lpm_type = "altddio_in",
@@ -77,8 +77,8 @@ endmodule
 // CNX file retrieval info
 // ============================================================
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
-// Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone IV E"
-// Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone IV E"
+// Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone III"
+// Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone III"
 // Retrieval info: CONSTANT: INVERT_INPUT_CLOCKS STRING "OFF"
 // Retrieval info: CONSTANT: LPM_HINT STRING "UNUSED"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "altddio_in"

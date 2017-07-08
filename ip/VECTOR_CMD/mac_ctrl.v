@@ -1,4 +1,4 @@
-// mac_control.v
+// mac_ctrl.v
 
 // This file was auto-generated as a prototype implementation of a module
 // created in component editor.  It ties off all outputs to ground and
@@ -9,9 +9,7 @@
 // to your version control system if you want to keep it.
 
 `timescale 1 ps / 1 ps
-module mac_control #(
-		parameter AUTO_CLOCK_CLOCK_RATE = "-1"
-	) (
+module mac_ctrl (
 		input  wire [7:0]  s0_address,     //    s0.address
 		input  wire        s0_read,        //      .read
 		output wire [31:0] s0_readdata,    //      .readdata
@@ -21,23 +19,23 @@ module mac_control #(
 		input  wire        clk,            // clock.clk
 		input  wire        reset,          // reset.reset
 		output wire        irq0_irq,       //  irq0.irq
-		output wire [31:0] out_data,       //   out.export
-		output wire        out_wr,         //      .export
-		output wire [7:0]  out_addr        //      .export
+		output wire [31:0] cmd_data,       //   cmd.export
+		output wire        cmd_wr,         //      .export
+		output wire [7:0]  cmd_addr,       //      .export
+		input  wire [31:0] pkt_data,       //
+		output wire        pkt_rd,         //
+		input  wire        irq_wire        //
 	);
-
-	// TODO: Auto-generated HDL template
 
 	assign s0_waitrequest = 1'b0;
 
-	assign s0_readdata = 32'b00000000000000000000000000000000;
+	assign s0_readdata = pkt_data;
+	assign pkt_rd = s0_read;
 
-	assign irq0_irq = 1'b0;
+	assign irq0_irq = irq_wire;
 
-	assign out_data = 32'b00000000000000000000000000000000;
-
-	assign out_addr = 8'b00000000;
-
-	assign out_wr = 1'b0;
+	assign cmd_data = s0_writedata;
+	assign cmd_addr = s0_address;
+	assign cmd_wr = s0_write;
 
 endmodule
