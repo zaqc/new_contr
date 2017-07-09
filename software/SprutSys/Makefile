@@ -142,7 +142,6 @@ ACDS_VERSION := 13.1
 ELF := SprutSys.elf
 
 # Paths to C, C++, and assembly source files.
-C_SRCS += hello_world.c
 C_SRCS += FreeRTOS/NiosII/heap_2.c
 C_SRCS += FreeRTOS/NiosII/port.c
 C_SRCS += FreeRTOS/croutine.c
@@ -151,6 +150,7 @@ C_SRCS += FreeRTOS/list.c
 C_SRCS += FreeRTOS/queue.c
 C_SRCS += FreeRTOS/tasks.c
 C_SRCS += FreeRTOS/timers.c
+C_SRCS += main.c
 CXX_SRCS :=
 ASM_SRCS := FreeRTOS/NiosII/port_asm.S
 

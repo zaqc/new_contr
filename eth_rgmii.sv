@@ -1,5 +1,11 @@
 module eth_rgmii ( 
-	input					rst_n,
+	input					i_cmd_rst_n,
+	input					i_cmd_clk,
+	input					i_cmd_wr,
+	input		[7:0]		i_cmd_addr,
+	input		[31:0]	i_cmd_data,
+	
+	output				o_pll_locked,
 	
 	input					i_rx_clk,
 	input					i_rx_vl,
@@ -8,11 +14,11 @@ module eth_rgmii (
 	output				o_gtx_clk,
 	output				o_tx_en,
 	output	[3:0]		o_tx_data,
+		
+	output				o_irq,
+	output				o_irq_pin,
 	
-	input					i_cmd_clk,
-	input					i_cmd_wr,
-	input		[7:0]		i_cmd_addr,
-	input		[31:0]	i_cmd_data,
+	output				o_pll_rx_clk,
 	
 	output	[7:0]		o_green_led
 );
@@ -34,7 +40,8 @@ wire							pll_gtx_clk;
 wire							pll_locked;
 
 assign o_gtx_clk = pll_gtx_clk;
-
+assign o_pll_locked = pll_locked;
+assign o_pll_rx_clk = pll_clk_rx;
 //----------------------------------------------------------------------------
 
 eth_in eth_in_unit(
@@ -67,14 +74,16 @@ eth_out eth_out_unit(
 //----------------------------------------------------------------------------
 
 eth_top eth_top_unit(
-	.rst_n(rst_n),
-	
-	.clk(i_cmd_clk),
+	.i_cmd_rst_n(i_cmd_rst_n),	
+	.i_cmd_clk(i_cmd_clk),
 	.i_cmd_addr(i_cmd_addr),
 	.i_cmd_data(i_cmd_data),
 	.i_cmd_wr(i_cmd_wr),
 	
-	//.o_irq(irq),
+	.i_pll_locked(pll_locked),
+	
+	.o_irq(o_irq),
+	.o_irq_pin(o_irq_pin),
 	
 	.i_rx_clk(pll_clk_rx),
 	.i_rx_data(rx_data),

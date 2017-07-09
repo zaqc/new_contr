@@ -96,7 +96,7 @@
 #define configTICK_RATE_HZ				( ( TickType_t ) 1000 )
 #define configCPU_CLOCK_HZ				( ( unsigned long ) SYS_CLK_FREQ )  
 #define configMAX_PRIORITIES			( 5 )
-#define configMINIMAL_STACK_SIZE		( 128 )
+#define configMINIMAL_STACK_SIZE		( 140 )
 #define configISR_STACK_SIZE			configMINIMAL_STACK_SIZE
 #define configTOTAL_HEAP_SIZE			( ( size_t ) (8192) )
 #define configMAX_TASK_NAME_LEN			( 8 )

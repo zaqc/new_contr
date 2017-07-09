@@ -6,13 +6,13 @@ module command(
 	input		[31:0]	i_cmd_data,
 	input					i_cmd_wr,
 
-	output [47:0]	o_dst_mac,
-	output [47:0]	o_src_mac,
+	output [47:0]		o_dst_mac,
+	output [47:0]		o_src_mac,
 	output [1:0]		o_operation,
-	output [47:0]	o_SHA,
-	output [31:0]	o_SPA,
-	output [47:0]	o_THA,
-	output [31:0]	o_TPA,
+	output [47:0]		o_SHA,
+	output [31:0]		o_SPA,
+	output [47:0]		o_THA,
+	output [31:0]		o_TPA,
 	
 	output [1:0]		o_send_packet
 );

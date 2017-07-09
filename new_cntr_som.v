@@ -274,8 +274,15 @@ nios_sys nios_sys_unit(
 	.cmd_data(cmd_data),
 	.cmd_wr(cmd_wr),
 	
-	.nios_clk_clk(nios_clk),
-	.nios_reset_reset(nios_reset)
+	.irq_export(rx_irq),
+	
+	.nios_clk_clk(nios_clk),			// output (NIOS clock)
+	.nios_reset_reset(nios_reset),	// output (NIOS reset)
+	
+	.pin_export(irq_pin),				// input (cross clocking)
+	
+	.in_clk_rx_clk(pll_rx_clk),		// input (cross clocking mm irq_pin)
+	.in_rst_rx_reset(~pll_locked)		// input
 );
 
 wire			[31:0]		cmd_data;
@@ -292,7 +299,13 @@ wire							nios_reset;
 //============================================================================
 
 eth_rgmii eth_rgmii_unit(
-	.rst_n(~nios_reset),
+	.i_cmd_rst_n(~nios_reset),
+	.i_cmd_clk(nios_clk),
+	.i_cmd_wr(cmd_wr),
+	.i_cmd_addr(cmd_addr),
+	.i_cmd_data(cmd_data),
+
+	.o_pll_locked(pll_locked),
 	
 	.i_rx_clk(rx_clk),
 	.i_rx_vl(rx_dv),
@@ -301,14 +314,18 @@ eth_rgmii eth_rgmii_unit(
 	.o_tx_en(tx_en),
 	.o_tx_data(txd),
 	.o_gtx_clk(gtx_clk),
-	
-	.i_cmd_clk(nios_clk),
-	.i_cmd_wr(cmd_wr),
-	.i_cmd_addr(cmd_addr),
-	.i_cmd_data(cmd_data),
+		
+	.o_irq(rx_irq),
+	.o_irq_pin(irq_pin),
+	.o_pll_rx_clk(pll_rx_clk),
 	
 	.o_green_led(leds_n)
 );
+
+wire						pll_locked;
+wire						rx_irq;
+wire						irq_pin;
+wire						pll_rx_clk;
 
 //----------------------------------------------------------------------------
 
