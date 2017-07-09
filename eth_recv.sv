@@ -152,8 +152,8 @@ always_comb begin
 		RECV_ARP_DUMMY: if(rx_count == 11'd18)  new_state = RECV_CRC32;
 		
 		RECV_CRC32: if(rx_count == 11'd4)  new_state = (crc_ok == 8'hFF) ? CRC32_ERR : CRC32_OK;
-		CRC32_OK: new_state = RECV_PREAMBLE;
-		CRC32_ERR: new_state = RECV_PREAMBLE;
+		CRC32_OK: new_state = STATE_IDLE;
+		CRC32_ERR: new_state = STATE_IDLE;
 	endcase
 end
 

@@ -15,8 +15,8 @@ module eth_rgmii (
 	output				o_tx_en,
 	output	[3:0]		o_tx_data,
 		
-	output				o_irq,
-	output				o_irq_pin,
+	output				o_irq_tx,
+	output				o_irq_rx,
 	
 	output				o_pll_tx_clk,	// to TX NIOS MM-Avalon Cross Clocking 
 	output				o_pll_rx_clk,	// to RX NIOS MM-Avalon Cross Clocking 
@@ -78,12 +78,12 @@ eth_out eth_out_unit(
 eth_top eth_top_unit(
 	.rst_n(pll_locked),
 
-	.i_cmd_addr(i_cmd_addr),
+	.i_cmd_addr(i_cmd_addr),	// Clock PLL_TX
 	.i_cmd_data(i_cmd_data),
 	.i_cmd_wr(i_cmd_wr),
 		
-	.o_irq(o_irq),
-	.o_irq_pin(o_irq_pin),
+	.o_irq_tx(o_irq_tx),
+	.o_irq_rx(o_irq_rx),
 	
 	.i_rx_clk(pll_clk_rx),
 	.i_rx_data(rx_data),
