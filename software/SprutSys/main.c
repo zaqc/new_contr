@@ -122,10 +122,12 @@ int main() {
 //			&mac_irq, NULL, 0);
 //	alt_ic_irq_enable(MAC_CTRL_IRQ_INTERRUPT_CONTROLLER_ID, MAC_CTRL_IRQ);
 
-	alt_ic_isr_register(PIO_INT_IRQ_INTERRUPT_CONTROLLER_ID, PIO_INT_IRQ,
-			&pio_irq, NULL, 0);
-	alt_ic_irq_enable(PIO_INT_IRQ_INTERRUPT_CONTROLLER_ID, PIO_INT_IRQ);
+//	alt_ic_isr_register(PIO_INT_IRQ_INTERRUPT_CONTROLLER_ID, PIO_INT_IRQ,
+//			&pio_irq, NULL, 0);
+//	alt_ic_irq_enable(PIO_INT_IRQ_INTERRUPT_CONTROLLER_ID, PIO_INT_IRQ);
 
+	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
+	alt_ic_irq_enable(0, 3);
 
 	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
 
@@ -168,8 +170,8 @@ int main() {
 //		IOWR(MAC_CTRL_BASE, 1, i);
 //	}
 
-	//vTaskEndScheduler();
-	//printf("Hello from Nios II!\n");
+//vTaskEndScheduler();
+//printf("Hello from Nios II!\n");
 
 	TaskHandle_t h_thread1;
 	xTaskCreate(&thread1, "thread one", configMINIMAL_STACK_SIZE, NULL,

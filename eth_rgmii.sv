@@ -11,14 +11,15 @@ module eth_rgmii (
 	input					i_rx_vl,
 	input		[3:0]		i_rx_data,
 	
-	output				o_gtx_clk,
+	output				o_gtx_clk,	// to GTX pin
 	output				o_tx_en,
 	output	[3:0]		o_tx_data,
 		
 	output				o_irq,
 	output				o_irq_pin,
 	
-	output				o_pll_rx_clk,
+	output				o_pll_tx_clk,	// to TX NIOS MM-Avalon Cross Clocking 
+	output				o_pll_rx_clk,	// to RX NIOS MM-Avalon Cross Clocking 
 	
 	output	[7:0]		o_green_led
 );
@@ -28,7 +29,7 @@ module eth_rgmii (
 eth_pll eth_pll_unit(
 	.inclk0(i_rx_clk),
 	
-	.c0(pll_clk_rx),	// 0
+	.c0(pll_clk_rx),		// 0
 	.c1(pll_clk_tx),		// 90
 	.c2(pll_gtx_clk),		// 180
 	.locked(pll_locked)
@@ -41,6 +42,7 @@ wire							pll_locked;
 
 assign o_gtx_clk = pll_gtx_clk;
 assign o_pll_locked = pll_locked;
+assign o_pll_tx_clk = pll_clk_tx;
 assign o_pll_rx_clk = pll_clk_rx;
 //----------------------------------------------------------------------------
 
@@ -74,14 +76,12 @@ eth_out eth_out_unit(
 //----------------------------------------------------------------------------
 
 eth_top eth_top_unit(
-	.i_cmd_rst_n(i_cmd_rst_n),	
-	.i_cmd_clk(i_cmd_clk),
+	.rst_n(pll_locked),
+
 	.i_cmd_addr(i_cmd_addr),
 	.i_cmd_data(i_cmd_data),
 	.i_cmd_wr(i_cmd_wr),
-	
-	.i_pll_locked(pll_locked),
-	
+		
 	.o_irq(o_irq),
 	.o_irq_pin(o_irq_pin),
 	

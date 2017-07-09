@@ -270,19 +270,20 @@ always @ (posedge clk)
 nios_sys nios_sys_unit(
 	.clk_clk(clk),
 
-	.cmd_addr(cmd_addr),
-	.cmd_data(cmd_data),
-	.cmd_wr(cmd_wr),
-	
-	.irq_export(rx_irq),
-	
+	.clk_tx_clk(pll_tx_clk),			//- tx clock-+
+	.reset_tx_reset_n(pll_locked),	//           |
+	.pin_export(irq_pin),				//           |
+	.cmd_addr(cmd_addr),					//           |
+	.cmd_data(cmd_data),					//           |
+	.cmd_wr(cmd_wr),						//-----------+
+		
 	.nios_clk_clk(nios_clk),			// output (NIOS clock)
 	.nios_reset_reset(nios_reset),	// output (NIOS reset)
 	
-	.pin_export(irq_pin),				// input (cross clocking)
 	
-	.in_clk_rx_clk(pll_rx_clk),		// input (cross clocking mm irq_pin)
-	.in_rst_rx_reset(~pll_locked)		// input
+	.clk_rx_clk(pll_rx_clk),			//- rx clock -+
+	.reset_rx_reset_n(pll_locked),	//				  |
+	.irq_export(rx_irq)					//------------+
 );
 
 wire			[31:0]		cmd_data;
@@ -317,6 +318,8 @@ eth_rgmii eth_rgmii_unit(
 		
 	.o_irq(rx_irq),
 	.o_irq_pin(irq_pin),
+	
+	.o_pll_tx_clk(pll_tx_clk),
 	.o_pll_rx_clk(pll_rx_clk),
 	
 	.o_green_led(leds_n)
@@ -326,6 +329,7 @@ wire						pll_locked;
 wire						rx_irq;
 wire						irq_pin;
 wire						pll_rx_clk;
+wire						pll_tx_clk;
 
 //----------------------------------------------------------------------------
 
