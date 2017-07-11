@@ -122,6 +122,14 @@
          type = "int";
       }
    }
+   element mac_ctrl_rx
+   {
+      datum _sortIndex
+      {
+         value = "14";
+         type = "int";
+      }
+   }
    element mac_ctrl_tx
    {
       datum _sortIndex
@@ -180,6 +188,22 @@
          type = "String";
       }
    }
+   element ccb_rx.s0
+   {
+      datum baseAddress
+      {
+         value = "16777216";
+         type = "String";
+      }
+   }
+   element mac_ctrl_rx.s0
+   {
+      datum baseAddress
+      {
+         value = "0";
+         type = "String";
+      }
+   }
    element ccb_tx.s0
    {
       datum baseAddress
@@ -196,22 +220,6 @@
          type = "String";
       }
    }
-   element ccb_rx.s0
-   {
-      datum baseAddress
-      {
-         value = "16777216";
-         type = "String";
-      }
-   }
-   element onchip_mem.s1
-   {
-      datum baseAddress
-      {
-         value = "33619968";
-         type = "String";
-      }
-   }
    element pio_int.s1
    {
       datum _lockedAddress
@@ -221,7 +229,7 @@
       }
       datum baseAddress
       {
-         value = "0";
+         value = "1024";
          type = "String";
       }
    }
@@ -230,6 +238,14 @@
       datum baseAddress
       {
          value = "33689600";
+         type = "String";
+      }
+   }
+   element onchip_mem.s1
+   {
+      datum baseAddress
+      {
+         value = "33619968";
          type = "String";
       }
    }
@@ -295,6 +311,8 @@
    internal="clk_rx_125.clk_in_reset"
    type="reset"
    dir="end" />
+ <interface name="rx_cmd" internal="mac_ctrl_rx.cmd" type="conduit" dir="end" />
+ <interface name="rx_pkt" internal="mac_ctrl_rx.pkt" type="conduit" dir="end" />
  <module kind="clock_source" version="13.1" enabled="1" name="main_clk">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
@@ -439,7 +457,7 @@
   <parameter name="tightlyCoupledInstructionMaster2AddrWidth" value="1" />
   <parameter name="tightlyCoupledInstructionMaster3AddrWidth" value="1" />
   <parameter name="instSlaveMapParam"><![CDATA[<address-map><slave name='onchip_mem.s1' start='0x2010000' end='0x201FFFF' /><slave name='nios2_cpu.jtag_debug_module' start='0x2020800' end='0x2021000' /><slave name='jtag_uart.avalon_jtag_slave' start='0x2021038' end='0x2021040' /></address-map>]]></parameter>
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='mac_ctrl_tx.s0' start='0x0' end='0x400' /><slave name='pio_int.s1' start='0x1000000' end='0x1000010' /><slave name='onchip_mem.s1' start='0x2010000' end='0x201FFFF' /><slave name='nios2_cpu.jtag_debug_module' start='0x2020800' end='0x2021000' /><slave name='sys_clk.s1' start='0x2021000' end='0x2021020' /><slave name='altpll_25.pll_slave' start='0x2021020' end='0x2021030' /><slave name='jtag_uart.avalon_jtag_slave' start='0x2021038' end='0x2021040' /></address-map>]]></parameter>
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='mac_ctrl_tx.s0' start='0x0' end='0x400' /><slave name='mac_ctrl_rx.s0' start='0x1000000' end='0x1000400' /><slave name='pio_int.s1' start='0x1000400' end='0x1000410' /><slave name='onchip_mem.s1' start='0x2010000' end='0x201FFFF' /><slave name='nios2_cpu.jtag_debug_module' start='0x2020800' end='0x2021000' /><slave name='sys_clk.s1' start='0x2021000' end='0x2021020' /><slave name='altpll_25.pll_slave' start='0x2021020' end='0x2021030' /><slave name='jtag_uart.avalon_jtag_slave' start='0x2021038' end='0x2021040' /></address-map>]]></parameter>
   <parameter name="clockFrequency" value="100000000" />
   <parameter name="deviceFamilyName" value="Cyclone III" />
   <parameter name="internalIrqMaskSystemInfo" value="15" />
@@ -735,6 +753,9 @@
   <parameter name="AUTO_SENDER_CLK_CLOCK_RATE" value="100000000" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
  </module>
+ <module kind="mac_ctrl" version="1.0" enabled="1" name="mac_ctrl_rx">
+  <parameter name="AUTO_CLOCK_CLOCK_RATE" value="125000000" />
+ </module>
  <connection
    kind="avalon"
    version="13.1"
@@ -881,7 +902,7 @@
  </connection>
  <connection kind="avalon" version="13.1" start="ccb_rx.m0" end="pio_int.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="baseAddress" value="0x0400" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1008,6 +1029,21 @@
    version="13.1"
    start="altpll_25.c0"
    end="irq_cc_mac_tx.sender_clk" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clk_rx_125.clk"
+   end="mac_ctrl_rx.clock" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_rx_125.clk_reset"
+   end="mac_ctrl_rx.reset" />
+ <connection kind="avalon" version="13.1" start="ccb_rx.m0" end="mac_ctrl_rx.s0">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="false" />

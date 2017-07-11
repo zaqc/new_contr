@@ -359,6 +359,8 @@ set_global_assignment -name ADD_DEFAULT_PINS_TO_SIMULATION_OUTPUT_WAVEFORMS OFF
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name SYSTEMVERILOG_FILE command.sv
+set_global_assignment -name VERILOG_FILE ip/VECTOR_CMD/mac_ctrl.v
 set_global_assignment -name QIP_FILE irq_pipe.qip
 set_global_assignment -name VERILOG_FILE calc_crc32.v
 set_global_assignment -name QIP_FILE cmd_pipe.qip
@@ -376,4 +378,5 @@ set_global_assignment -name CDF_FILE ../datacoll_pins/output_files/Chain.cdf
 set_global_assignment -name QIP_FILE eth_pll.qip
 set_global_assignment -name SYSTEMVERILOG_FILE eth_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE eth_rgmii.sv
+set_global_assignment -name SYSTEMVERILOG_FILE status.sv
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

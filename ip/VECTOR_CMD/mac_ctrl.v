@@ -25,17 +25,30 @@ module mac_ctrl (
 		input  wire [31:0] pkt_data,       //
 		output wire        pkt_rd,         //
 		input  wire        irq_wire        //
-	);
+);
 
-	assign s0_waitrequest = 1'b0;
+assign s0_waitrequest = wait_request; //1'b0;
 
-	assign s0_readdata = pkt_data;
-	assign pkt_rd = s0_read;
+reg			[0:0]			wait_request;
 
-	assign irq0_irq = irq_wire;
+always @ (posedge clk or posedge reset)
+	if(reset)
+		wait_request <= 1'b1;
+	else
+		if(wait_request) begin
+			if(s0_read)
+				wait_request <= 1'b0;
+		end
+		else
+			wait_request <= 1'b1;
 
-	assign cmd_data = s0_writedata;
-	assign cmd_addr = s0_address;
-	assign cmd_wr = s0_write;
+assign s0_readdata = pkt_data;
+assign pkt_rd = s0_read;
+
+assign irq0_irq = irq_wire;
+
+assign cmd_data = s0_writedata;
+assign cmd_addr = s0_address;
+assign cmd_wr = s0_write;
 
 endmodule

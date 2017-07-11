@@ -4,7 +4,11 @@ module eth_top(
 	input		[7:0]		i_cmd_addr,		// control command from NIOS-II
 	input		[31:0]	i_cmd_data,
 	input					i_cmd_wr,
-	
+		
+	input		[7:0]  	i_rx_cmd_addr,	// read status registers
+	output	[31:0]	o_rx_pkt_data,
+	input					i_rx_pkt_rd,
+
 	output	[31:0]	o_pkt_data,		// packet data IP, MAC and so on to NIOS-II
 	
 	output				o_irq_tx,
@@ -67,11 +71,41 @@ eth_recv eth_recv_unit(
 	.i_data(i_rx_data),
 	.i_data_vl(i_rx_dv),
 	
+	.o_SHA(rx_SHA),
+	.o_SPA(rx_SPA),
+	.o_THA(rx_THA),
+	.o_TPA(rx_TPA),
+	
 	.o_pkt_type(pkt_type)
 );
 
+wire			[47:0]		rx_SHA;
+wire			[31:0]		rx_SPA;
+wire			[47:0]		rx_THA;
+wire			[31:0]		rx_TPA;
+
 wire			[1:0]			pkt_type;
 reg			[7:0]			r_pkt_count;
+
+//----------------------------------------------------------------------------
+
+status status_unit(
+	.rst_n(rst_n),
+	.clk(i_rx_clk),
+	
+	.i_rx_cmd_addr(i_rx_cmd_addr),
+	.o_rx_pkt_data(o_rx_pkt_data),
+	.i_rx_pkt_rd(i_rx_pkt_rd),
+	
+	.i_SHA(rx_SHA),
+	.i_SPA(rx_SPA),
+	.i_THA(rx_THA),
+	.i_TPA(rx_TPA),
+	
+	.i_packet_type(pkt_type)
+);
+
+//----------------------------------------------------------------------------
 
 always_ff @ (posedge i_rx_clk or negedge rst_n)
 	if(~rst_n)

@@ -257,8 +257,8 @@ output	phyrst_n;
 input	led_100;
 
 assign phyrst_n = &phy_rst_cntr;
-reg		[27:0]		phy_rst_cntr;
-initial phy_rst_cntr <= 28'd0;
+reg		[7:0]		phy_rst_cntr;
+initial phy_rst_cntr <= 8'd0;
 always @ (posedge clk)
 	if(~(&phy_rst_cntr))
 		phy_rst_cntr <= phy_rst_cntr + 1'b1;
@@ -270,15 +270,18 @@ always @ (posedge clk)
 nios_sys nios_sys_unit(
 	.clk_clk(clk),
 
-	.clk_tx_clk(pll_tx_clk),			//- tx clock-+
-	.reset_tx_reset_n(pll_locked),	//           |
-	.irq_export(tx_irq),					//           |
-	.cmd_addr(cmd_addr),					//           |
-	.cmd_data(cmd_data),					//           |
-	.cmd_wr(cmd_wr),						//-----------+	
+	.clk_tx_clk(pll_tx_clk),			//- tx clock -+
+	.reset_tx_reset_n(pll_locked),	//            |
+	.irq_export(tx_irq),					//            |
+	.cmd_addr(cmd_addr),					//            |
+	.cmd_data(cmd_data),					//            |
+	.cmd_wr(cmd_wr),						//------------+	
 	
 	.clk_rx_clk(pll_rx_clk),			//- rx clock -+
 	.reset_rx_reset_n(pll_locked),	//				  |
+	.rx_cmd_addr(rx_cmd_addr),			//				  |
+	.rx_pkt_data(rx_pkt_data),			//				  |
+	.rx_pkt_rd(rx_pkt_rd),				//				  |
 	.pin_export(rx_irq)					//------------+
 	
 );
@@ -287,8 +290,22 @@ wire			[31:0]		cmd_data;
 wire			[7:0]			cmd_addr;
 wire							cmd_wr;
 
-wire							nios_clk;
-wire							nios_reset;
+wire			[31:0]		rx_pkt_data;
+wire			[7:0]			rx_cmd_addr;
+wire							rx_pkt_rd;
+
+//reg			[31:0]		pkt_data;
+//always @ (posedge pll_rx_clk or negedge pll_locked)
+//	if(~pll_locked)
+//		pkt_data <= 32'd0;
+//	else
+//		if(rx_pkt_rd)
+//			pkt_data <= {rx_cmd_addr, rx_cmd_addr, rx_cmd_addr, rx_cmd_addr};
+//
+//assign rx_pkt_data = pkt_data;
+//
+//wire							nios_clk;
+//wire							nios_reset;
 
 //----------------------------------------------------------------------------
 
@@ -297,12 +314,14 @@ wire							nios_reset;
 //============================================================================
 
 eth_rgmii eth_rgmii_unit(
-	.i_cmd_rst_n(~nios_reset),
-	.i_cmd_clk(nios_clk),
 	.i_cmd_wr(cmd_wr),
 	.i_cmd_addr(cmd_addr),
 	.i_cmd_data(cmd_data),
 
+	.i_rx_cmd_addr(rx_cmd_addr),
+	.o_rx_pkt_data(rx_pkt_data),
+	.i_rx_pkt_rd(rx_pkt_rd),
+	
 	.o_pll_locked(pll_locked),
 	
 	.i_rx_clk(rx_clk),
