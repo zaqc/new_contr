@@ -85,7 +85,7 @@ void thread2(void *param) {
 
 			IOWR(MAC_CTRL_TX_BASE, 2, 1);
 
-			vTaskDelay(1000);
+			// vTaskDelay(1000);
 
 			i++;
 			IOWR(MAC_CTRL_TX_BASE, 1, i);
@@ -115,32 +115,35 @@ static void pio_irq(void* context, alt_u32 id)
 	IORD_ALTERA_AVALON_PIO_DATA(PIO_INT_BASE);
 	IORD_ALTERA_AVALON_PIO_DATA(PIO_INT_BASE);
 	IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_INT_BASE, 0);
+
+	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 12);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 16);
+
 	__asm("nop");
 }
 
 int main() {
 
-//	alt_ic_isr_register(MAC_CTRL_IRQ_INTERRUPT_CONTROLLER_ID, MAC_CTRL_IRQ,
+//	alt_ic_isr_register(SYS_CLK_IRQ_INTERRUPT_CONTROLLER_ID, SYS_CLK_IRQ,
 //			&mac_irq, NULL, 0);
-//	alt_ic_irq_enable(MAC_CTRL_IRQ_INTERRUPT_CONTROLLER_ID, MAC_CTRL_IRQ);
+//	alt_ic_irq_enable(SYS_CLK_IRQ_INTERRUPT_CONTROLLER_ID, SYS_CLK_IRQ);
 
-//	alt_ic_isr_register(PIO_INT_IRQ_INTERRUPT_CONTROLLER_ID, PIO_INT_IRQ,
-//			&pio_irq, NULL, 0);
-//	alt_ic_irq_enable(PIO_INT_IRQ_INTERRUPT_CONTROLLER_ID, PIO_INT_IRQ);
+////	alt_ic_isr_register(0, 2, &mac_irq, NULL, 0);
+////	alt_ic_irq_enable(0, 2);
+////
+////	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
+////	alt_ic_irq_enable(0, 3);
+////
+////	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
+//
+//	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x00);
+//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x04);
+//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
+//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x00);
 
-	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
-	alt_ic_irq_enable(0, 3);
+	//portENABLE_INTERRUPTS();
 
-	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
-
-	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x00);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x04);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x00);
-
-	portENABLE_INTERRUPTS();
-
-	//printf("Program started...\n");
+	printf("Program started...\n");
 
 	__asm("nop");
 
@@ -179,7 +182,7 @@ int main() {
 
 //vTaskEndScheduler();
 //printf("Hello from Nios II!\n");
-
+/*
 	TaskHandle_t h_thread1;
 	xTaskCreate(&thread1, "thread one", configMINIMAL_STACK_SIZE, NULL,
 			tskIDLE_PRIORITY, &h_thread1);
@@ -193,6 +196,8 @@ int main() {
 //	printf(str);
 
 	vTaskStartScheduler();
+*/
+	thread2(NULL);
 
 	while (1) {
 	}
