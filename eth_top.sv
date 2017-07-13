@@ -104,7 +104,7 @@ status status_unit(
 	.i_THA(rx_THA),
 	.i_TPA(rx_TPA),
 	
-	.i_packet_type(pkt_type)
+	.i_pkt_type(pkt_type)
 );
 
 //----------------------------------------------------------------------------

@@ -278,11 +278,11 @@ nios_sys nios_sys_unit(
 	.cmd_wr(cmd_wr),						//------------+	
 	
 	.clk_rx_clk(pll_rx_clk),			//- rx clock -+
-	.reset_rx_reset_n(pll_locked)//,	//				  |
-	//.rx_cmd_addr(rx_cmd_addr),			//				  |
-	//.rx_pkt_data(rx_pkt_data),			//				  |
-	//.rx_pkt_rd(rx_pkt_rd),				//				  |
-	//.pin_export(rx_irq)					//------------+
+	.reset_rx_reset_n(pll_locked),	//				  |
+	.rx_cmd_addr(rx_cmd_addr),			//				  |
+	.rx_pkt_data(rx_pkt_data),			//				  |
+	.rx_pkt_rd(rx_pkt_rd),				//				  |
+	.pin_export(rx_irq)					//------------+
 	
 );
 
