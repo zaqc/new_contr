@@ -73,20 +73,25 @@ eth_recv eth_recv_unit(
 	.i_data(i_rx_data),
 	.i_data_vl(i_rx_dv),
 	
-	.o_SHA(rx_SHA),
-	.o_SPA(rx_SPA),
-	.o_THA(rx_THA),
-	.o_TPA(rx_TPA),
+	.o_dst_mac(recv_dst_mac),
+	.o_src_mac(recv_src_mac),
+	.o_SHA(recv_SHA),
+	.o_SPA(recv_SPA),
+	.o_THA(recv_THA),
+	.o_TPA(recv_TPA),
 	
-	.o_pkt_type(pkt_type)
+	.o_pkt_type(recv_pkt_type)
 );
 
-wire			[47:0]		rx_SHA;
-wire			[31:0]		rx_SPA;
-wire			[47:0]		rx_THA;
-wire			[31:0]		rx_TPA;
+wire			[47:0]		recv_dst_mac;
+wire			[47:0]		recv_src_mac;
 
-wire			[1:0]			pkt_type;
+wire			[47:0]		recv_SHA;
+wire			[31:0]		recv_SPA;
+wire			[47:0]		recv_THA;
+wire			[31:0]		recv_TPA;
+
+wire			[1:0]			recv_pkt_type;
 reg			[7:0]			r_pkt_count;
 
 //----------------------------------------------------------------------------
@@ -99,12 +104,14 @@ status status_unit(
 	.o_rx_pkt_data(o_rx_pkt_data),
 	.i_rx_pkt_rd(i_rx_pkt_rd),
 	
-	.i_SHA(rx_SHA),
-	.i_SPA(rx_SPA),
-	.i_THA(rx_THA),
-	.i_TPA(rx_TPA),
+	.i_dst_mac(recv_dst_mac),
+	.i_src_mac(recv_src_mac),	
+	.i_SHA(recv_SHA),
+	.i_SPA(recv_SPA),
+	.i_THA(recv_THA),
+	.i_TPA(recv_TPA),
 	
-	.i_pkt_type(pkt_type)
+	.i_pkt_type(recv_pkt_type)
 );
 
 //----------------------------------------------------------------------------
@@ -113,14 +120,14 @@ always_ff @ (posedge i_rx_clk or negedge rst_n)
 	if(~rst_n)
 		r_pkt_count <= 8'd0;
 	else
-		if(|pkt_type)
+		if(|recv_pkt_type)
 			r_pkt_count <= r_pkt_count + 8'd1;
 
 assign o_green_led = r_pkt_count;
 
 //----------------------------------------------------------------------------
 
-assign o_irq_rx = 1'b0; //|pkt_type;
+assign o_irq_rx = |recv_pkt_type;
 
 // ===========================================================================
 // send frame

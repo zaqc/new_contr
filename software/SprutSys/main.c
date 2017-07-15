@@ -32,23 +32,36 @@
 unsigned char self_mac_addr[6] = { 0x00, 0x23, 0x54, 0x3C, 0x47, 0x1B };
 unsigned char self_ip_addr[4] = { 10, 0, 0, 100 };
 
-#define SRC_MAC_ADDR_1		10
-#define SRC_MAC_ADDR_2		11
-#define DST_MAC_ADDR_1		12
-#define DST_MAC_ADDR_2		13
-#define SRC_IP_ADDR			14
-#define DST_IP_ADDR			15
-#define SRC_PORT			16
-#define DST_PORT			17
-#define SRC_DST_PORT		18
+#define SEND_SRC_MAC_ADDR_1		10
+#define SEND_SRC_MAC_ADDR_2		11
+#define SEND_DST_MAC_ADDR_1		12
+#define SEND_DST_MAC_ADDR_2		13
+#define SEND_SRC_IP_ADDR		14
+#define SEND_DST_IP_ADDR		15
+#define SEND_SRC_PORT			16
+#define SEND_DST_PORT			17
+#define SEND_SRC_DST_PORT		18
 
-#define	ARP_OPERATION		19
-#define ARP_DST_MAC_ADDR_1	20
-#define ARP_DST_MAC_ADDR_2	21
-#define ARP_DST_IP			22
-#define ARP_SRC_MAC_ADDR_1	23
-#define ARP_SRC_MAC_ADDR_2	24
-#define ARP_SRC_IP			25
+#define	SEND_ARP_OPERATION		19
+#define SEND_ARP_DST_MAC_ADDR_1	20
+#define SEND_ARP_DST_MAC_ADDR_2	21
+#define SEND_ARP_DST_IP			22
+#define SEND_ARP_SRC_MAC_ADDR_1	23
+#define SEND_ARP_SRC_MAC_ADDR_2	24
+#define SEND_ARP_SRC_IP			25
+//----------------------------------------------------------------------------
+
+#define	RECV_DST_MAC_ADDR1		(0x01 * 0x04)
+#define	RECV_DST_MAC_ADDR2		(0x02 * 0x04)
+#define	RECV_SRC_MAC_ADDR1		(0x03 * 0x04)
+#define	RECV_SRC_MAC_ADDR2		(0x04 * 0x04)
+#define	RECV_ARP_SHA1			(0x05 * 0x04)
+#define	RECV_ARP_SHA2			(0x06 * 0x04)
+#define	RECV_ARP_SPA			(0x07 * 0x04)
+#define	RECV_ARP_THA1			(0x08 * 0x04)
+#define	RECV_ARP_THA2			(0x09 * 0x04)
+#define	RECV_ARP_TPA			(0x0A * 0x04)
+#define	RECV_PKT_TYPE			(0x0B * 0x04)
 //----------------------------------------------------------------------------
 
 void thread1(void *param) {
@@ -63,23 +76,23 @@ void thread2(void *param) {
 	while (1) {
 		int i = 0;
 		while (1) {
-			IOWR(MAC_CTRL_TX_BASE, DST_MAC_ADDR_1, 0xFFFFFFFF);
-			IOWR(MAC_CTRL_TX_BASE, DST_MAC_ADDR_2, 0xFFFFFFFF);
+			IOWR(MAC_CTRL_TX_BASE, SEND_DST_MAC_ADDR_1, 0xFFFFFFFF);
+			IOWR(MAC_CTRL_TX_BASE, SEND_DST_MAC_ADDR_2, 0xFFFFFFFF);
 
 			//{0x00, 0x23, 0x54, 0x3C, 0x47, 0x1B};
-			IOWR(MAC_CTRL_TX_BASE, SRC_MAC_ADDR_1, 0x0023543C);
-			IOWR(MAC_CTRL_TX_BASE, SRC_MAC_ADDR_2, 0xFFFF471B);
+			IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_1, 0x0023543C);
+			IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_2, 0xFFFF471B);
 
-			IOWR(MAC_CTRL_TX_BASE, ARP_OPERATION, 1);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_OPERATION, 1);
 			// arp request DST_MAC
 
-			IOWR(MAC_CTRL_TX_BASE, ARP_DST_MAC_ADDR_1, 0xFFFFFFFF);
-			IOWR(MAC_CTRL_TX_BASE, ARP_DST_MAC_ADDR_2, 0xFFFFFFFF);
-			IOWR(MAC_CTRL_TX_BASE, ARP_DST_IP, 0x0A000002);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_DST_MAC_ADDR_1, 0xFFFFFFFF);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_DST_MAC_ADDR_2, 0xFFFFFFFF);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_DST_IP, 0x0A000002);
 
-			IOWR(MAC_CTRL_TX_BASE, ARP_SRC_MAC_ADDR_1, 0x0023543C);
-			IOWR(MAC_CTRL_TX_BASE, ARP_SRC_MAC_ADDR_2, 0xFFFF471B);
-			IOWR(MAC_CTRL_TX_BASE, ARP_SRC_IP, 0x0A000064);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_SRC_MAC_ADDR_1, 0x0023543C);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_SRC_MAC_ADDR_2, 0xFFFF471B);
+			IOWR(MAC_CTRL_TX_BASE, SEND_ARP_SRC_IP, 0x0A000064);
 
 			//IOWR(MAC_CTRL_0_BASE, 2, 0xFFFFFFFF);
 
@@ -91,6 +104,13 @@ void thread2(void *param) {
 			IOWR(MAC_CTRL_TX_BASE, 1, i);
 
 			//printf("two ");
+			volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x38);
+			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x14);
+			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
+			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x2C);
+			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x14);
+
+			vTaskDelay(500);
 		}
 	}
 }
@@ -112,12 +132,16 @@ static void pio_irq(void* context, alt_u32 id)
 #endif
 {
 //	printf("MAC IRQ rise...\n");
-	IORD_ALTERA_AVALON_PIO_DATA(PIO_INT_BASE);
-	IORD_ALTERA_AVALON_PIO_DATA(PIO_INT_BASE);
 	IOWR_ALTERA_AVALON_PIO_EDGE_CAP(PIO_INT_BASE, 0);
 
-	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 12);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 16);
+	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, RECV_SRC_MAC_ADDR1);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, RECV_SRC_MAC_ADDR2);
+
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, RECV_DST_MAC_ADDR1);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, RECV_DST_MAC_ADDR2);
+
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, RECV_ARP_SPA);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, RECV_ARP_TPA);
 
 	__asm("nop");
 }
@@ -131,15 +155,15 @@ int main() {
 ////	alt_ic_isr_register(0, 2, &mac_irq, NULL, 0);
 ////	alt_ic_irq_enable(0, 2);
 ////
-////	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
-////	alt_ic_irq_enable(0, 3);
-////
-////	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
-//
-//	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x00);
-//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x04);
-//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
-//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x00);
+	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
+	alt_ic_irq_enable(0, 3);
+
+	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
+
+	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x04);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x0C);
+	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x10);
 
 	//portENABLE_INTERRUPTS();
 
@@ -182,7 +206,7 @@ int main() {
 
 //vTaskEndScheduler();
 //printf("Hello from Nios II!\n");
-/*
+
 	TaskHandle_t h_thread1;
 	xTaskCreate(&thread1, "thread one", configMINIMAL_STACK_SIZE, NULL,
 			tskIDLE_PRIORITY, &h_thread1);
@@ -196,7 +220,7 @@ int main() {
 //	printf(str);
 
 	vTaskStartScheduler();
-*/
+
 	thread2(NULL);
 
 	while (1) {

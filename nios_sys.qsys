@@ -204,7 +204,7 @@
          type = "String";
       }
    }
-   element ccb_tx.s0
+   element mac_ctrl_tx.s0
    {
       datum baseAddress
       {
@@ -212,7 +212,7 @@
          type = "String";
       }
    }
-   element mac_ctrl_tx.s0
+   element mac_ctrl_rx.s0
    {
       datum baseAddress
       {
@@ -228,19 +228,11 @@
          type = "String";
       }
    }
-   element mac_ctrl_rx.s0
+   element ccb_tx.s0
    {
       datum baseAddress
       {
          value = "0";
-         type = "String";
-      }
-   }
-   element sys_clk.s1
-   {
-      datum baseAddress
-      {
-         value = "33820672";
          type = "String";
       }
    }
@@ -262,6 +254,14 @@
       datum baseAddress
       {
          value = "33685504";
+         type = "String";
+      }
+   }
+   element sys_clk.s1
+   {
+      datum baseAddress
+      {
+         value = "33820672";
          type = "String";
       }
    }
