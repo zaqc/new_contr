@@ -96,7 +96,7 @@ void thread2(void *param) {
 
 			//IOWR(MAC_CTRL_0_BASE, 2, 0xFFFFFFFF);
 
-			IOWR(MAC_CTRL_TX_BASE, 2, 1);
+			IOWR(MAC_CTRL_TX_BASE, 2, 2);
 
 			// vTaskDelay(1000);
 
