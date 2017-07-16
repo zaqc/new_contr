@@ -41,14 +41,15 @@ unsigned char self_ip_addr[4] = { 10, 0, 0, 100 };
 #define SEND_SRC_PORT			16
 #define SEND_DST_PORT			17
 #define SEND_SRC_DST_PORT		18
+#define SEND_UDP_DATA_LEN		19
 
-#define	SEND_ARP_OPERATION		19
-#define SEND_ARP_DST_MAC_ADDR_1	20
-#define SEND_ARP_DST_MAC_ADDR_2	21
-#define SEND_ARP_DST_IP			22
-#define SEND_ARP_SRC_MAC_ADDR_1	23
-#define SEND_ARP_SRC_MAC_ADDR_2	24
-#define SEND_ARP_SRC_IP			25
+#define	SEND_ARP_OPERATION		20
+#define SEND_ARP_DST_MAC_ADDR_1	21
+#define SEND_ARP_DST_MAC_ADDR_2	22
+#define SEND_ARP_DST_IP			23
+#define SEND_ARP_SRC_MAC_ADDR_1	24
+#define SEND_ARP_SRC_MAC_ADDR_2	25
+#define SEND_ARP_SRC_IP			26
 //----------------------------------------------------------------------------
 
 #define	RECV_DST_MAC_ADDR1		(0x01 * 0x04)
@@ -96,7 +97,7 @@ void thread2(void *param) {
 
 			//IOWR(MAC_CTRL_0_BASE, 2, 0xFFFFFFFF);
 
-			IOWR(MAC_CTRL_TX_BASE, 2, 2);
+			IOWR(MAC_CTRL_TX_BASE, 2, 1);
 
 			// vTaskDelay(1000);
 

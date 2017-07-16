@@ -136,6 +136,12 @@ command command_unit(
 	.o_THA(cmd_THA),
 	.o_TPA(cmd_TPA),
 	
+	.o_src_ip(cmd_src_ip),
+	.o_dst_ip(cmd_dst_ip),
+	.o_src_port(cmd_src_port),
+	.o_dst_port(cmd_dst_port),
+	.o_udp_data_len(cmd_udp_data_len),
+	
 	.o_send_packet(send_packet)
 );
 
@@ -148,6 +154,12 @@ wire			[47:0]		cmd_SHA;
 wire			[31:0]		cmd_SPA;
 wire			[47:0]		cmd_THA;
 wire			[31:0]		cmd_TPA;
+
+wire			[31:0]		cmd_src_ip;
+wire			[31:0]		cmd_dst_ip;
+wire			[15:0]		cmd_src_port;
+wire			[15:0]		cmd_dst_port;
+wire			[15:0]		cmd_udp_data_len;
 
 wire			[1:0]			send_packet;
 
@@ -174,22 +186,38 @@ eth_send eth_send_unit(
 	//.o_ready(o_arp_ready)
 );
 
+reg			[7:0]			udp_stream_data;
+wire							udp_stream_rd;
+
+always_ff @ (posedge i_tx_clk or negedge rst_n)
+	if(~rst_n)
+		udp_stream_data <= 8'd0;
+	else
+		if(udp_stream_rd)
+			udp_stream_data <= udp_stream_data + 8'd1;
+
 udp_send usp_send_unit(
 	.rst_n(rst_n),
 	.clk(i_tx_clk),
 
-	//.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
-	//.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
+	.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
+	.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
+	.i_src_ip(cmd_src_ip),
+	.i_dst_ip(cmd_dst_ip),
+	.i_src_port(cmd_src_port),
+	.i_dst_port(cmd_dst_port),
+	.i_data_len(cmd_udp_data_len),
 	
-	.i_dst_mac(48'h0c54a5312485),
-	.i_src_mac(48'h0023543c471b),
-
-	.i_src_ip(32'h0A000064),
-	.i_dst_ip(32'h0A000002),
-	.i_src_port(16'd5152),
-	.i_dst_port(16'd2179),
+	.i_in_data(udp_stream_data),
+	.o_rd(udp_stream_rd),
 	
-	.i_data_len(16'd1024),
+	//.i_dst_mac(48'h0c54a5312485),
+	//.i_src_mac(48'h0023543c471b),
+	//.i_src_ip(32'h0A000064),
+	//.i_dst_ip(32'h0A000002),
+	//.i_src_port(16'd5152),
+	//.i_dst_port(16'd2179),
+	//.i_data_len(16'd1024),
 	
 	.o_tx_data(udp_tx_data),
 	.o_tx_en(udp_tx_en),
