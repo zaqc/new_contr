@@ -163,6 +163,20 @@ wire			[15:0]		cmd_udp_data_len;
 
 wire			[1:0]			send_packet;
 
+reg			[1:0]			dd_send_packet;
+
+always_ff @ (posedge i_tx_clk or negedge rst_n)
+	if(~rst_n)
+		dd_send_packet <= 2'd0;
+	else
+		dd_send_packet <= send_packet;
+		
+reg			[0:0]			send_arp;
+always_ff @ (posedge i_tx_clk) send_arp <= (dd_send_packet == 2'b01) ? 1'b1 : 1'b0;
+
+reg			[0:0]			send_udp;
+always_ff @ (posedge i_tx_clk) send_udp <= (dd_send_packet == 2'b10) ? 1'b1 : 1'b0;
+
 //----------------------------------------------------------------------------
 
 eth_send eth_send_unit(
@@ -182,7 +196,7 @@ eth_send eth_send_unit(
 	.o_tx_data(arp_tx_data),
 	.o_tx_en(arp_tx_en),
 	
-	.i_enable(send_packet == 2'b01)
+	.i_enable(send_arp)
 	//.o_ready(o_arp_ready)
 );
 
@@ -211,18 +225,18 @@ udp_send usp_send_unit(
 	.i_in_data(udp_stream_data),
 	.o_rd(udp_stream_rd),
 	
-	//.i_dst_mac(48'h0c54a5312485),
-	//.i_src_mac(48'h0023543c471b),
-	//.i_src_ip(32'h0A000064),
-	//.i_dst_ip(32'h0A000002),
-	//.i_src_port(16'd5152),
-	//.i_dst_port(16'd2179),
-	//.i_data_len(16'd1024),
+//	.i_dst_mac(48'h0c54a5312485),
+//	.i_src_mac(48'h0023543c471b),
+//	.i_src_ip(32'h0A000064),
+//	.i_dst_ip(32'h0A000002),
+//	.i_src_port(16'd5152),
+//	.i_dst_port(16'd2179),
+//	.i_data_len(16'd1024),
 	
 	.o_tx_data(udp_tx_data),
 	.o_tx_en(udp_tx_en),
 	
-	.i_enable(send_packet == 2'b10)
+	.i_enable(send_udp)
 );
 
 endmodule

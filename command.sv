@@ -82,6 +82,7 @@ always_ff @ (posedge clk or negedge rst_n)
 		src_port <= 16'd0;
 		dst_port <= 16'd0;
 		udp_data_len <= 16'd0;
+		arp_operation <= 2'd0;
 		arp_src_mac <= 48'd0;
 		arp_dst_mac <= 48'd0;
 		arp_src_ip <= 32'd0;
@@ -89,30 +90,29 @@ always_ff @ (posedge clk or negedge rst_n)
 	end
 	else
 		if(i_cmd_wr)
-			case(i_cmd_addr)
-				8'd10: src_mac[47:16] <= i_cmd_data;
-				8'd11: src_mac[15:0] <= i_cmd_data[15:0];				
-				8'd12: dst_mac[47:16] <= i_cmd_data;
-				8'd13: dst_mac[15:0] <= i_cmd_data[15:0];
+			case(i_cmd_addr[4:0])
+				5'h03: src_mac[47:16] <= i_cmd_data[31:0];
+				5'h04: src_mac[15:0] <= i_cmd_data[15:0];				
+				5'h05: dst_mac[47:16] <= i_cmd_data[31:0];
+				5'h06: dst_mac[15:0] <= i_cmd_data[15:0];
 				
-				8'd14: src_ip <= i_cmd_data;
-				8'd15: dst_ip <= i_cmd_data;
+				5'h07: src_ip <= i_cmd_data[31:0];
+				5'h08: dst_ip <= i_cmd_data[31:0];
 				
-				8'd16: src_port <= i_cmd_data[15:0];
-				8'd17: dst_port <= i_cmd_data[15:0];
-				8'd18: {src_port, dst_port} <= i_cmd_data;
+				5'h09: src_port <= i_cmd_data[15:0];
+				5'h0A: dst_port <= i_cmd_data[15:0];
 				
-				8'd19: udp_data_len <= i_cmd_data[15:0];
+				5'h0C: udp_data_len <= i_cmd_data[15:0];
 				
-				8'd20: arp_operation <= i_cmd_data[1:0];
+				5'h0D: arp_operation <= i_cmd_data[1:0];
 				
-				8'd21: arp_dst_mac[47:16] <= i_cmd_data;
-				8'd22: arp_dst_mac[15:0] <= i_cmd_data[15:0];
-				8'd23: arp_dst_ip <= i_cmd_data;
+				5'h0E: arp_dst_mac[47:16] <= i_cmd_data[31:0];
+				5'h0F: arp_dst_mac[15:0] <= i_cmd_data[15:0];
+				5'h10: arp_dst_ip <= i_cmd_data[31:0];
 				
-				8'd24: arp_src_mac[47:16] <= i_cmd_data;
-				8'd25: arp_src_mac[15:0] <= i_cmd_data[15:0];
-				8'd26: arp_src_ip <= i_cmd_data;
+				5'h11: arp_src_mac[47:16] <= i_cmd_data[31:0];
+				5'h12: arp_src_mac[15:0] <= i_cmd_data[15:0];
+				5'h13: arp_src_ip <= i_cmd_data[31:0];
 			endcase
 
 endmodule
