@@ -42,8 +42,39 @@ assign o_send_packet = send_packet;
 
 //----------------------------------------------------------------------------
 
-assign o_dst_mac = dst_mac;
+reg		[47:0]		src_mac;
+
+always_ff @ (posedge clk or negedge rst_n)
+	if(~rst_n)
+		src_mac <= 48'd0;
+	else
+		if(i_cmd_wr)
+			if(i_cmd_addr == 8'd24)
+				src_mac[47:16] <= i_cmd_data;
+			else
+				if(i_cmd_addr == 8'd28)
+					src_mac[15:0] <= i_cmd_data[15:0];
+
 assign o_src_mac = src_mac;
+
+//----------------------------------------------------------------------------
+
+reg		[47:0]		dst_mac;
+
+always_ff @ (posedge clk or negedge rst_n)
+	if(~rst_n)
+		dst_mac <= 48'd0;
+	else
+		if(i_cmd_wr)
+			if(i_cmd_addr == 8'd32)
+				dst_mac[47:16] <= i_cmd_data;
+			else
+				if(i_cmd_addr == 8'd36)
+					dst_mac[15:0] <= i_cmd_data[15:0];
+
+assign o_dst_mac = dst_mac;
+
+//----------------------------------------------------------------------------
 
 assign o_operation = arp_operation;
 assign o_SHA = arp_src_mac;
@@ -51,19 +82,21 @@ assign o_SPA = arp_src_ip;
 assign o_THA = arp_dst_mac;
 assign o_TPA = arp_dst_ip;
 
+reg		[31:0]		src_ip;
 assign o_src_ip = src_ip;
+
+reg		[31:0]		dst_ip;
 assign o_dst_ip = dst_ip;
+
+reg		[15:0]		src_port;
 assign o_src_port = src_port;
+
+reg		[15:0]		dst_port;
 assign o_dst_port = dst_port;
+
 assign o_udp_data_len = udp_data_len;
 
-reg		[47:0]		src_mac;
-reg		[47:0]		dst_mac;
 
-reg		[31:0]		src_ip;
-reg		[31:0]		dst_ip;
-reg		[15:0]		src_port;
-reg		[15:0]		dst_port;
 reg		[15:0]		udp_data_len;
 
 reg		[1:0]			arp_operation;
@@ -75,8 +108,8 @@ reg		[31:0]		arp_src_ip;
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n) begin
-		src_mac <= 48'd0;
-		dst_mac <= 48'd0;
+//		src_mac = 48'd0;
+//		dst_mac = 48'd0;
 		src_ip <= 32'd0;
 		dst_ip <= 32'd0;
 		src_port <= 16'd0;
@@ -90,29 +123,30 @@ always_ff @ (posedge clk or negedge rst_n)
 	end
 	else
 		if(i_cmd_wr)
-			case(i_cmd_addr[4:0])
-				5'h03: src_mac[47:16] <= i_cmd_data[31:0];
-				5'h04: src_mac[15:0] <= i_cmd_data[15:0];				
-				5'h05: dst_mac[47:16] <= i_cmd_data[31:0];
-				5'h06: dst_mac[15:0] <= i_cmd_data[15:0];
+			case(i_cmd_addr)
+//				5'h03: src_mac[47:16] = i_cmd_data[31:0];
+//				5'h04: src_mac[15:0] = i_cmd_data[15:0];				
+//				5'h05: dst_mac[47:16] = i_cmd_data[31:0];
+//				5'h06: dst_mac[15:0] = i_cmd_data[15:0];
 				
-				5'h07: src_ip <= i_cmd_data[31:0];
-				5'h08: dst_ip <= i_cmd_data[31:0];
+				8'd40: src_ip <= i_cmd_data;
+				8'd44: dst_ip <= i_cmd_data;
 				
-				5'h09: src_port <= i_cmd_data[15:0];
-				5'h0A: dst_port <= i_cmd_data[15:0];
+				8'd48: src_port <= i_cmd_data[15:0];
+				8'd52: dst_port <= i_cmd_data[15:0];
 				
-				5'h0C: udp_data_len <= i_cmd_data[15:0];
+				8'd60: udp_data_len <= i_cmd_data[15:0];
 				
-				5'h0D: arp_operation <= i_cmd_data[1:0];
+				8'd64: arp_operation <= i_cmd_data[1:0];
 				
-				5'h0E: arp_dst_mac[47:16] <= i_cmd_data[31:0];
-				5'h0F: arp_dst_mac[15:0] <= i_cmd_data[15:0];
-				5'h10: arp_dst_ip <= i_cmd_data[31:0];
+				8'd68: arp_dst_mac[47:16] <= i_cmd_data[31:0];
+				8'd72: arp_dst_mac[15:0] <= i_cmd_data[15:0];
+				8'd76: arp_dst_ip <= i_cmd_data[31:0];
 				
-				5'h11: arp_src_mac[47:16] <= i_cmd_data[31:0];
-				5'h12: arp_src_mac[15:0] <= i_cmd_data[15:0];
-				5'h13: arp_src_ip <= i_cmd_data[31:0];
+				8'd80: arp_src_mac[47:16] <= i_cmd_data[31:0];
+				8'd84: arp_src_mac[15:0] <= i_cmd_data[15:0];
+				8'd88: arp_src_ip <= i_cmd_data[31:0];
+				default: ;
 			endcase
 
 endmodule

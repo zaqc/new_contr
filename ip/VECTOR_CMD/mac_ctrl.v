@@ -27,7 +27,7 @@ module mac_ctrl (
 		input  wire        irq_wire        //
 );
 
-assign s0_waitrequest = s0_write ? 0 : wait_request;
+assign s0_waitrequest = 1'b0; //s0_write ? 0 : wait_request;
 
 reg			[0:0]			wait_request;
 

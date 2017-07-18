@@ -100,23 +100,24 @@ assign o_irq_rx = |recv_pkt_type;
 
 reg			[1:0]			send_pkt_type;
 
-wire			[7:0]			arp_tx_data;
-wire							arp_tx_en;
+//wire			[7:0]			arp_tx_data;
+//wire							arp_tx_en;
 wire			[7:0]			udp_tx_data;
 wire							udp_tx_en;
 
-wire							sending_arp;
-assign sending_arp = (send_pkt_type == 2'b01 || send_packet == 2'b01) ? 1'b1 : 1'b0;
+assign o_tx_data = udp_tx_data;
+//(send_pkt_type == 2'b01) ? arp_tx_data : 
+//((send_pkt_type == 2'b10) ? udp_tx_data : 8'd0);
+assign o_tx_en = udp_tx_en;
+//(send_pkt_type == 2'b01) ? arp_tx_en : 
+//((send_pkt_type == 2'b10) ? udp_tx_en : 1'b0);
 
-assign o_tx_data =  sending_arp ? arp_tx_data : udp_tx_data;						
-assign o_tx_en = sending_arp ? arp_tx_en : udp_tx_en;
-
-always_ff @ (posedge i_tx_clk or negedge rst_n) 
+always_ff @ (posedge i_tx_clk or negedge rst_n)
 	if(~rst_n)
-		send_pkt_type <= 2'b00;
+		send_pkt_type <= 2'd0;
 	else
-		if(|send_packet)
-			send_pkt_type <= send_packet;
+		if(i_cmd_wr && i_cmd_addr == 8'd2)
+			send_pkt_type <= i_cmd_data[1:0];
 
 //----------------------------------------------------------------------------
 
@@ -179,6 +180,17 @@ always_ff @ (posedge i_tx_clk) send_udp <= (dd_send_packet == 2'b10) ? 1'b1 : 1'
 
 //----------------------------------------------------------------------------
 
+//reg			[47:0]		arp_src_mac;
+//always_latch
+//	if(send_packet == 2'b01) 
+//		arp_src_mac = cmd_src_mac;
+
+//reg			[47:0]		udp_src_mac;
+//always_latch 
+//	if(send_packet == 2'b10) 
+//		udp_src_mac = cmd_src_mac;
+
+/*
 eth_send eth_send_unit(
 	.rst_n(rst_n),
 	.clk(i_tx_clk),
@@ -199,7 +211,7 @@ eth_send eth_send_unit(
 	.i_enable(send_arp)
 	//.o_ready(o_arp_ready)
 );
-
+*/
 reg			[7:0]			udp_stream_data;
 wire							udp_stream_rd;
 
@@ -210,17 +222,61 @@ always_ff @ (posedge i_tx_clk or negedge rst_n)
 		if(udp_stream_rd)
 			udp_stream_data <= udp_stream_data + 8'd1;
 
+reg		[47:0]		src_mac;
+reg		[47:0]		dst_mac;
+reg		[31:0]		src_ip;
+reg		[31:0]		dst_ip;
+reg		[15:0]		src_port;
+reg		[15:0]		dst_port;
+reg		[15:0]		udp_data_len;
+
+always_ff @ (posedge i_tx_clk or negedge rst_n)
+	if(~rst_n) begin
+		src_mac = 48'd0;
+		dst_mac = 48'd0;
+		src_ip <= 32'd0;
+		dst_ip <= 32'd0;
+		src_port <= 16'd0;
+		dst_port <= 16'd0;
+		udp_data_len <= 16'd0;
+	end
+	else
+		if(i_cmd_wr)
+			case(i_cmd_addr)
+				8'd24: src_mac[47:16] = i_cmd_data[31:0];
+				8'd28: src_mac[15:0] = i_cmd_data[15:0];				
+				8'd32: dst_mac[47:16] = i_cmd_data[31:0];
+				8'd36: dst_mac[15:0] = i_cmd_data[15:0];
+				
+				8'd40: src_ip <= i_cmd_data;
+				8'd44: dst_ip <= i_cmd_data;
+				
+				8'd48: src_port <= i_cmd_data[15:0];
+				8'd52: dst_port <= i_cmd_data[15:0];
+				
+				8'd60: udp_data_len <= i_cmd_data[15:0];
+			endcase
+
+
 udp_send usp_send_unit(
 	.rst_n(rst_n),
 	.clk(i_tx_clk),
 
-	.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
-	.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
-	.i_src_ip(cmd_src_ip),
-	.i_dst_ip(cmd_dst_ip),
-	.i_src_port(cmd_src_port),
-	.i_dst_port(cmd_dst_port),
-	.i_data_len(cmd_udp_data_len),
+	.i_dst_mac(dst_mac),	
+	.i_src_mac(src_mac),
+	.i_src_ip(src_ip),
+	.i_dst_ip(dst_ip),
+	.i_src_port(src_port),
+	.i_dst_port(dst_port),
+	.i_data_len(udp_data_len),
+
+//	.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
+//	.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
+//	.i_src_ip(cmd_src_ip),
+//	.i_dst_ip(cmd_dst_ip),
+//	.i_src_port(cmd_src_port),
+//	.i_dst_port(cmd_dst_port),
+//	.i_data_len(cmd_udp_data_len),
 	
 	.i_in_data(udp_stream_data),
 	.o_rd(udp_stream_rd),

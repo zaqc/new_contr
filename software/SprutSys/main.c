@@ -32,24 +32,24 @@
 unsigned char self_mac_addr[6] = { 0x00, 0x23, 0x54, 0x3C, 0x47, 0x1B };
 unsigned char self_ip_addr[4] = { 10, 0, 0, 100 };
 
-#define SEND_SRC_MAC_ADDR_1		0x03
-#define SEND_SRC_MAC_ADDR_2		0x04
-#define SEND_DST_MAC_ADDR_1		0x05
-#define SEND_DST_MAC_ADDR_2		0x06
-#define SEND_SRC_IP_ADDR		0x07
-#define SEND_DST_IP_ADDR		0x08
-#define SEND_SRC_PORT			0x09
-#define SEND_DST_PORT			0x0A
-#define SEND_SRC_DST_PORT		0x0B
-#define SEND_UDP_DATA_LEN		0x0C
+#define SEND_SRC_MAC_ADDR_1		24
+#define SEND_SRC_MAC_ADDR_2		28
+#define SEND_DST_MAC_ADDR_1		32
+#define SEND_DST_MAC_ADDR_2		36
+#define SEND_SRC_IP_ADDR		40
+#define SEND_DST_IP_ADDR		44
+#define SEND_SRC_PORT			48
+#define SEND_DST_PORT			52
+#define SEND_SRC_DST_PORT		56
+#define SEND_UDP_DATA_LEN		60
 
-#define	SEND_ARP_OPERATION		0x0D
-#define SEND_ARP_DST_MAC_ADDR_1	0x0E
-#define SEND_ARP_DST_MAC_ADDR_2	0x0F
-#define SEND_ARP_DST_IP			0x10
-#define SEND_ARP_SRC_MAC_ADDR_1	0x11
-#define SEND_ARP_SRC_MAC_ADDR_2	0x12
-#define SEND_ARP_SRC_IP			0x13
+#define	SEND_ARP_OPERATION		64
+#define SEND_ARP_DST_MAC_ADDR_1	68
+#define SEND_ARP_DST_MAC_ADDR_2	72
+#define SEND_ARP_DST_IP			76
+#define SEND_ARP_SRC_MAC_ADDR_1	80
+#define SEND_ARP_SRC_MAC_ADDR_2	84
+#define SEND_ARP_SRC_IP			88
 //----------------------------------------------------------------------------
 
 #define	RECV_DST_MAC_ADDR1		(0x01 * 0x04)
@@ -75,15 +75,15 @@ void thread1(void *param) {
 
 void thread2(void *param) {
 	while (1) {
-		int i = 0;
+		int i = 1;
 		while (1) {
 			if (i == 0) {
 				IOWR(MAC_CTRL_TX_BASE, SEND_DST_MAC_ADDR_1, 0xFFFFFFFF);
 				IOWR(MAC_CTRL_TX_BASE, SEND_DST_MAC_ADDR_2, 0xFFFFFFFF);
 
 				//{0x00, 0x23, 0x54, 0x3C, 0x47, 0x1B};
-				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_1, 0x0023543C);
 				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_2, 0xFFFF471B);
+				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_1, 0x12345678); //0x0023543C);
 
 				IOWR(MAC_CTRL_TX_BASE, SEND_ARP_OPERATION, 1);
 				// arp request DST_MAC
@@ -99,21 +99,24 @@ void thread2(void *param) {
 			} else {
 				IOWR(MAC_CTRL_TX_BASE, SEND_DST_MAC_ADDR_1, 0x0c54a531);
 				IOWR(MAC_CTRL_TX_BASE, SEND_DST_MAC_ADDR_2, 0xFFFF2485);
-				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_1, 0x0023543c);
+
 				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_2, 0xFFFF471b);
+				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_MAC_ADDR_1, 0x0023543c);
 
 				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_IP_ADDR, 0x0A000064);
 				IOWR(MAC_CTRL_TX_BASE, SEND_DST_IP_ADDR, 0x0A000002);
-				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_PORT, 0xFFFF5152);
-				IOWR(MAC_CTRL_TX_BASE, SEND_DST_PORT, 0xFFFF2179);
+				IOWR(MAC_CTRL_TX_BASE, SEND_SRC_PORT, 2179);
+				IOWR(MAC_CTRL_TX_BASE, SEND_DST_PORT, 5152);
 				IOWR(MAC_CTRL_TX_BASE, SEND_UDP_DATA_LEN, 0xFFFF0400);
 
-				i = 0;
+				i = 1;
 			}
 
-			//IOWR(MAC_CTRL_0_BASE, 2, 0xFFFFFFFF);
+			//IOWR(MAC_CTRL_TX_BASE, 2, 0xFFFFFFFF);
 
-			IOWR(MAC_CTRL_TX_BASE, 2, (i == 0) ? 2 : 1);
+			IOWR(MAC_CTRL_TX_BASE, 2, (i == 1) ? 2 : 1);
+
+			vTaskDelay(500);
 
 			// vTaskDelay(1000);
 
@@ -127,7 +130,6 @@ void thread2(void *param) {
 			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x2C);
 			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x14);
 
-			vTaskDelay(500);
 		}
 	}
 }
@@ -172,8 +174,8 @@ int main() {
 ////	alt_ic_isr_register(0, 2, &mac_irq, NULL, 0);
 ////	alt_ic_irq_enable(0, 2);
 ////
-	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
-	alt_ic_irq_enable(0, 3);
+//	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
+//	alt_ic_irq_enable(0, 3);
 
 	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
 

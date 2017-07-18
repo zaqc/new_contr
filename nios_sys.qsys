@@ -212,7 +212,7 @@
          type = "String";
       }
    }
-   element mac_ctrl_rx.s0
+   element ccb_tx.s0
    {
       datum baseAddress
       {
@@ -228,7 +228,7 @@
          type = "String";
       }
    }
-   element ccb_tx.s0
+   element mac_ctrl_rx.s0
    {
       datum baseAddress
       {
