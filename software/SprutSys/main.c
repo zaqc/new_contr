@@ -65,6 +65,8 @@ unsigned char self_ip_addr[4] = { 10, 0, 0, 100 };
 #define	RECV_PKT_TYPE			(0x0B * 0x04)
 //----------------------------------------------------------------------------
 
+//#define MAC_CTRL_TX_BASE		0x00000000
+
 void thread1(void *param) {
 	while (1) {
 		vTaskDelay(750);
@@ -129,7 +131,6 @@ void thread2(void *param) {
 			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
 			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x2C);
 			v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x14);
-
 		}
 	}
 }
@@ -177,18 +178,18 @@ int main() {
 //	alt_ic_isr_register(0, 3, &pio_irq, NULL, 0);
 //	alt_ic_irq_enable(0, 3);
 
-	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
-
-	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x04);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x0C);
-	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x10);
-
-	//portENABLE_INTERRUPTS();
-
-	printf("Program started...\n");
-
-	__asm("nop");
+//	IOWR_ALTERA_AVALON_PIO_IRQ_MASK(PIO_INT_BASE, 0xFFFFFFFF);
+//
+//	volatile uint32_t v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x04);
+//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x08);
+//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x0C);
+//	v = IORD_32DIRECT(MAC_CTRL_RX_BASE, 0x10);
+//
+//	//portENABLE_INTERRUPTS();
+//
+//	printf("Program started...\n");
+//
+//	__asm("nop");
 
 //	int i = 0;
 //	while (1) {

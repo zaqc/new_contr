@@ -8,6 +8,10 @@ module eth_top(
 	input		[7:0]  	i_rx_cmd_addr,	// read status registers
 	output	[31:0]	o_rx_pkt_data,
 	input					i_rx_pkt_rd,
+	
+	input					i_tx_wr,
+	input		[7:0]		i_tx_wr_addr,
+	input		[31:0]	i_tx_wr_data,
 
 	output	[31:0]	o_pkt_data,		// packet data IP, MAC and so on to NIOS-II
 	
@@ -232,31 +236,30 @@ reg		[15:0]		udp_data_len;
 
 always_ff @ (posedge i_tx_clk or negedge rst_n)
 	if(~rst_n) begin
-		src_mac = 48'd0;
-		dst_mac = 48'd0;
-		src_ip <= 32'd0;
-		dst_ip <= 32'd0;
-		src_port <= 16'd0;
-		dst_port <= 16'd0;
-		udp_data_len <= 16'd0;
+		src_mac = 48'h0023543c471b;
+		dst_mac = 48'h0c54a5312485;
+		src_ip <= 32'h0A000064;
+		dst_ip <= 32'h0A000002;
+		src_port <= 16'd5152;
+		dst_port <= 16'd2179;
+		udp_data_len <= 16'd1024;
 	end
 	else
-		if(i_cmd_wr)
-			case(i_cmd_addr)
-				8'd24: src_mac[47:16] = i_cmd_data[31:0];
-				8'd28: src_mac[15:0] = i_cmd_data[15:0];				
-				8'd32: dst_mac[47:16] = i_cmd_data[31:0];
-				8'd36: dst_mac[15:0] = i_cmd_data[15:0];
+		if(i_tx_wr)
+			case(i_tx_wr_addr)
+				8'd24: src_mac[47:16] = i_tx_wr_data[31:0];
+				8'd28: src_mac[15:0] = i_tx_wr_data[15:0];				
+				8'd32: dst_mac[47:16] = i_tx_wr_data[31:0];
+				8'd36: dst_mac[15:0] = i_tx_wr_data[15:0];
 				
-				8'd40: src_ip <= i_cmd_data;
-				8'd44: dst_ip <= i_cmd_data;
+				8'd40: src_ip <= i_tx_wr_data;
+				8'd44: dst_ip <= i_tx_wr_data;
 				
-				8'd48: src_port <= i_cmd_data[15:0];
-				8'd52: dst_port <= i_cmd_data[15:0];
+				8'd48: src_port <= i_tx_wr_data[15:0];
+				8'd52: dst_port <= i_tx_wr_data[15:0];
 				
-				8'd60: udp_data_len <= i_cmd_data[15:0];
+				8'd60: udp_data_len <= i_tx_wr_data[15:0];
 			endcase
-
 
 udp_send usp_send_unit(
 	.rst_n(rst_n),

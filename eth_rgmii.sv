@@ -9,6 +9,10 @@ module eth_rgmii (
 
 	output				o_pll_locked,
 	
+	input					i_tx_wr,
+	input		[7:0]		i_tx_wr_addr,
+	input		[31:0]	i_tx_wr_data,
+
 	input					i_rx_clk,
 	input					i_rx_vl,
 	input		[3:0]		i_rx_data,
@@ -87,6 +91,12 @@ eth_top eth_top_unit(
 	.i_rx_cmd_addr(i_rx_cmd_addr),
 	.o_rx_pkt_data(o_rx_pkt_data),
 	.i_rx_pkt_rd(i_rx_pkt_rd),
+	
+	
+	.i_tx_wr(i_tx_wr),
+	.i_tx_wr_addr(i_tx_wr_addr),
+	.i_tx_wr_data(i_tx_wr_data),
+
 
 	.o_irq_tx(o_irq_tx),
 	.o_irq_rx(o_irq_rx),

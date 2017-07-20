@@ -28,9 +28,6 @@ reg			[31:0]		src_ip;
 reg			[15:0]		dst_port;
 reg			[15:0]		src_port;
 reg			[15:0]		data_len;
-reg			[0:0]			prev_enable;
-
-always_ff @ (posedge clk) prev_enable <= i_enable;
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n) begin
@@ -43,7 +40,7 @@ always_ff @ (posedge clk or negedge rst_n)
 		data_len <= 16'd0;
 	end
 	else 
-		if(i_enable & ~prev_enable) begin
+		if(state != new_state && new_state == SEND_PREAMBLE) begin
 			dst_mac <= i_dst_mac;
 			src_mac <= i_src_mac;
 			dst_ip <= i_dst_ip;
@@ -56,12 +53,14 @@ always_ff @ (posedge clk or negedge rst_n)
 // ===========================================================================
 // READY
 // ===========================================================================
+
 assign o_ready = (state == IDLE) ? 1'b1 : 1'b0;
 assign o_rd = (state == SEND_UDP_DATA) ? 1'b1 : 1'b0;
 
 // ===========================================================================
 // IP/UDP parameters & header
 // ===========================================================================
+
 parameter	[3:0]		ip_header_ver = 4'h4;		// 4 - for IPv4
 parameter	[3:0]		ip_header_size = 4'h5;		// size in 32bit word's
 parameter	[7:0]		ip_DSCP_ECN = 8'h00;			// ?
@@ -90,6 +89,7 @@ assign ip_hdr3 = {ip_pkt_TTL, ip_pkt_type, ip_pkt_CRC};
 // ===========================================================================
 // STATE MACHINE
 // ===========================================================================
+
 enum logic [4:0] {
 	NONE = 5'd0,
 	IDLE = 5'd1,
@@ -114,17 +114,17 @@ enum logic [4:0] {
 } new_state, state;
 
 always_ff @ (posedge clk or negedge rst_n)
-	if(1'b0 == rst_n)
+	if(~rst_n)
 		state <= NONE;
 	else
 		state <= new_state;
-		
+
 always_comb begin
 	new_state = state;
 	case(state)
-		NONE: if(1'b1 == rst_n) new_state = IDLE;
-		IDLE: if(1'b1 == i_enable) new_state = ETH_START;
-		ETH_START: if(1'b0 == i_enable) new_state = SEND_PREAMBLE;
+		NONE: if(rst_n) new_state = IDLE;
+		IDLE: if(i_enable) new_state = ETH_START;
+		ETH_START: if(~i_enable) new_state = SEND_PREAMBLE;
 		SEND_PREAMBLE: if(ds_cnt == 16'd8) new_state = SEND_DST_MAC;
 		SEND_DST_MAC: if(ds_cnt == 16'd6) new_state = SEND_SRC_MAC;
 		SEND_SRC_MAC: if(ds_cnt == 16'd6) new_state = SEND_ETHER_TYPE;
@@ -141,16 +141,37 @@ always_comb begin
 		SEND_UDP_DATA: if(ds_cnt == data_len) new_state = SEND_CRC32;
 		SEND_CRC32: if(ds_cnt == 16'd4) new_state = DELAY;
 		DELAY: if(ds_cnt == 16'd10) new_state = SET_READY;
-		SET_READY: if(1'b0 == i_enable) new_state = IDLE;
+		SET_READY: if(~i_enable) new_state = IDLE;
 	endcase
 end
 
-assign o_tx_en = (state > ETH_START && state < DELAY) ? 1'b1 : 1'b0;
+wire							tx_en;
+assign tx_en = (state > ETH_START && state < DELAY) ? 1'b1 : 1'b0;
+wire			[7:0]			tx_data;
+assign tx_data = (state == SEND_CRC32) ? crc32[7:0] : ((state == SEND_UDP_DATA) ? i_in_data : ds[63:56]);
 
 // ===========================================================================
 //	DATA SHIFT & SEND
 // ===========================================================================
-assign o_tx_data = (state == SEND_CRC32) ? crc32[7:0] : ((state == SEND_UDP_DATA) ? i_in_data : ds[63:56]);
+
+tx_fifo tx_fifo_unit(
+	.clock(clk),
+	.data(tx_data),
+	.wrreq(tx_en),
+	
+	.q(o_tx_data),
+	.empty(tx_fifo_empty),
+	.rdreq(1'b1)
+);
+
+wire							tx_fifo_empty;
+assign o_tx_en = ~tx_fifo_empty;
+
+//----------------------------------------------------------------------------
+
+
+
+//----------------------------------------------------------------------------
 
 reg			[63:0]		ds;
 reg			[15:0]		ds_cnt;
@@ -163,18 +184,18 @@ always_ff @ (posedge clk or negedge rst_n) begin
 		if(new_state != state) begin
 			case(new_state)
 				SEND_PREAMBLE: ds <= 64'h55555555555555d5;
-				SEND_DST_MAC: ds <= {dst_mac, 16'd0};
-				SEND_SRC_MAC: ds <= {src_mac, 16'd0};
-				SEND_ETHER_TYPE: ds <= {16'h0800, 48'd0};	// UDP frame
-				SEND_HDR1: ds <= {ip_hdr1, 32'd0};
-				SEND_HDR2: ds <= {ip_hdr2, 32'd0};
-				SEND_HDR3: ds <= {ip_hdr3, 32'd0};
-				SEND_SRC_IP: ds <= {src_ip, 32'd0};
-				SEND_DST_IP: ds <= {dst_ip, 32'd0};
-				SEND_UDP_SRC_PORT: ds <= {src_port, 48'd0};
-				SEND_UDP_DST_PORT: ds <= {dst_port, 48'd0};
-				SEND_UDP_LEN: ds <= {udp_length, 48'd0};
-				SEND_UDP_CRC: ds <= {udp_crc, 48'd0};				
+				SEND_DST_MAC: ds[63:16] <= dst_mac;
+				SEND_SRC_MAC: ds[63:16] <= src_mac;
+				SEND_ETHER_TYPE: ds[63:48] <= 16'h0800;	// UDP frame
+				SEND_HDR1: ds[63:32] <= ip_hdr1;
+				SEND_HDR2: ds[63:32] <= ip_hdr2;
+				SEND_HDR3: ds[63:32] <= ip_hdr3;
+				SEND_SRC_IP: ds[63:32] <= src_ip;
+				SEND_DST_IP: ds[63:32] <= dst_ip;
+				SEND_UDP_SRC_PORT: ds[63:48] <= src_port;
+				SEND_UDP_DST_PORT: ds[63:48] <= dst_port;
+				SEND_UDP_LEN: ds[63:48] <= udp_length;
+				SEND_UDP_CRC: ds[63:48] <= udp_crc;
 			endcase
 			ds_cnt <= 16'd1;
 		end 
@@ -199,7 +220,7 @@ reg		[0:0]			calc_crc_flag;
 always @ (posedge clk or negedge rst_n) begin
 	if(1'b0 == rst_n)
 		calc_crc_flag <= 1'b0;
-	else 
+	else
 		if(new_state != state) begin
 			if(new_state == SEND_DST_MAC)
 				calc_crc_flag <= 1'b1;
@@ -215,8 +236,8 @@ calc_crc32 u_crc32(
 	.rst_n(rst_n),
 	.clk(clk),
 	.i_calc(calc_crc_flag),
-	.i_vl(o_tx_en),
-	.i_data(o_tx_data),
+	.i_vl(tx_en),
+	.i_data(tx_data),
 	.o_crc32(crc32)
 );
 

@@ -275,16 +275,26 @@ nios_sys nios_sys_unit(
 	.irq_export(tx_irq),					//            |
 	.cmd_addr(cmd_addr),					//            |
 	.cmd_data(cmd_data),					//            |
-	.cmd_wr(cmd_wr),						//------------+	
+	.cmd_wr(cmd_wr),						//------------+
 	
 	.clk_rx_clk(pll_rx_clk),			//- rx clock -+
 	.reset_rx_reset_n(pll_locked),	//				  |
 	.rx_cmd_addr(rx_cmd_addr),			//				  |
 	.rx_pkt_data(rx_pkt_data),			//				  |
 	.rx_pkt_rd(rx_pkt_rd),				//				  |
-	.pin_export(rx_irq)					//------------+
+	.pin_export(rx_irq),					//------------+
 	
+	.tx_reset_reset_n(pll_locked),
+	.tx_clk_clk(pll_tx_clk),
+	
+	.mm_tx_write(tx_write),
+	.mm_tx_address(tx_writeaddr),
+	.mm_tx_writedata(tx_writedata)
 );
+
+wire							tx_write;
+wire			[7:0]			tx_writeaddr;
+wire			[31:0]		tx_writedata;
 
 wire			[31:0]		cmd_data;
 wire			[7:0]			cmd_addr;
@@ -323,6 +333,10 @@ eth_rgmii eth_rgmii_unit(
 	.i_rx_pkt_rd(rx_pkt_rd),
 	
 	.o_pll_locked(pll_locked),
+	
+	.i_tx_wr(tx_write),
+	.i_tx_wr_addr(tx_writeaddr),
+	.i_tx_wr_data(tx_writedata),
 	
 	.i_rx_clk(rx_clk),
 	.i_rx_vl(rx_dv),
