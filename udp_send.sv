@@ -235,7 +235,7 @@ wire		[31:0]		crc32;
 calc_crc32 u_crc32(
 	.rst_n(rst_n),
 	.clk(clk),
-	.i_calc(calc_crc_flag),
+	.i_calc(calc_crc32),
 	.i_vl(tx_en),
 	.i_data(tx_data),
 	.o_crc32(crc32)

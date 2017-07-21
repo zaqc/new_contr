@@ -13,14 +13,45 @@ module udp_packet(
 	input		[15:0]		i_dst_port,
 	
 	input		[15:0]		i_udp_len,
+	input		[7:0]			i_udp_stream,
+	output					o_udp_rd,
 	
-	input						i_enable
+	input						i_enable,
+	output					o_ready,
+	
+	output	[4:0]			o_state,
+	output	[2:0]			o_send_state,
+	output					o_crc_calc,
+	
+	output   [7:0]			o_crc_data,
+	
+	output	[31:0]		o_crc32
 );
 
-reg			[0:0]			prev_enable;
-always_ff @ (posedge clk) prev_enable <= i_enable;
+assign o_state = state;
+assign o_send_state = send_state;
+assign o_crc_calc = calc_crc32;
 
-assign start = (~prev_enable & i_enable);
+assign o_ready = start;
+//----------------------------------------------------------------------------
+
+reg			[0:0]			prev_prev_enable;
+always_ff @ (posedge clk or negedge rst_n) 
+	if(~rst_n)
+		prev_prev_enable <= 1'b0;
+	else
+		prev_prev_enable <= i_enable;
+		
+reg			[0:0]			prev_enable;
+always_ff @ (posedge clk or negedge rst_n) 
+	if(~rst_n)
+		prev_enable <= 1'b0;
+	else
+		prev_enable <= prev_prev_enable;
+
+assign start = (~prev_prev_enable & prev_enable);
+
+//----------------------------------------------------------------------------
 
 reg			[47:0]		src_mac;
 reg			[47:0]		dst_mac;
@@ -38,52 +69,74 @@ always_ff @ (posedge clk or negedge rst_n)
 		dst_ip <= 32'h0A000002;
 		src_port <= 16'd5152;
 		dst_port <= 16'd2179;
-		udp_len <= 16'd1024;
+		udp_len <= 16'd16;
 	end
 	else 
-		if(i_enable) begin
-			src_mac = i_src_mac;
-			dst_mac = i_dst_mac;
-			src_ip <= i_src_ip;
-			dst_ip <= i_dst_ip;
-			src_port <= i_src_port;
-			dst_port <= i_dst_port;
-			udp_len <= i_udp_len;
+		if(start & ready) begin
+//			src_mac = i_src_mac;
+//			dst_mac = i_dst_mac;
+//			src_ip <= i_src_ip;
+//			dst_ip <= i_dst_ip;
+//			src_port <= i_src_port;
+//			dst_port <= i_dst_port;
+//			udp_len <= i_udp_len;
+			src_mac = 48'h0023543c471b;
+			dst_mac = 48'h0c54a5312485;
+			src_ip <= 32'h0A000064;
+			dst_ip <= 32'h0A000002;
+			src_port <= 16'd5152;
+			dst_port <= 16'd2179;
+			udp_len <= 16'd16;
 		end
 
-reg			[3:0]			state;
-reg			[3:0]			new_state;
+//----------------------------------------------------------------------------
+
+reg			[0:0]			ready;
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n)
-		state <= 4'd0;
+		ready <= 1'b1;
+	else
+		if(ready) begin
+			if(start)
+				ready <= 1'b0;
+		end
+		else begin
+		end
+
+//----------------------------------------------------------------------------
+
+reg			[4:0]			state;
+reg			[4:0]			new_state;
+
+always_ff @ (posedge clk or negedge rst_n)
+	if(~rst_n)
+		state <= 5'd0;
 	else
 		state <= new_state;
 		
 wire							fifo_rst;
+wire							sender_ready;
 
 always_comb begin
 	new_state = state;
 	fifo_rst = 1'b0;
-	if(~|state) begin
-		if(~rst_n) begin
-			new_state = 4'd1;
-			fifo_rst = 1'b1;
-		end
+	if(state == 5'h00) begin
+		new_state = 5'd1;
 	end 
 	else 
-		if(~|state[3:1] & state[0]) begin
+		if(state == 5'h01) begin
 			if(start) begin
-				new_state = 4'd2;
+				new_state = 5'h02;
 				fifo_rst = 1'b1;
 			end
 		end
 		else 
-			if(~&state) 
-				new_state = new_state + 1'd1; 
+			if(state >= 5'h02 && state <= 5'h16) 
+				new_state = state + 1'd1; 
 			else
 				if(sender_ready)
-					new_state = 4'd1;
+					new_state = 5'h01;
 end
 
 // ===========================================================================
@@ -94,7 +147,7 @@ parameter	[3:0]			ip_header_ver = 4'h4;		// 4 - for IPv4
 parameter	[3:0]			ip_header_size = 4'h5;		// size in 32bit word's
 parameter	[7:0]			ip_DSCP_ECN = 8'h00;			// ?
 wire			[15:0]		ip_pkt_size;
-assign  ip_pkt_size = data_len + 16'h001C;	// 16'h002E size of UDP packet
+assign  ip_pkt_size = udp_len + 16'h001C;	// 16'h002E size of UDP packet
 wire			[31:0]		ip_hdr1;
 assign ip_hdr1 = {ip_header_ver, ip_header_size, ip_DSCP_ECN, ip_pkt_size};
 
@@ -115,91 +168,167 @@ assign ip_pkt_CRC = ~(tmp_crc[31:16] + tmp_crc[15:0]);
 wire			[31:0]	ip_hdr3;	
 assign ip_hdr3 = {ip_pkt_TTL, ip_pkt_type, ip_pkt_CRC};
 
+wire			[15:0]	udp_crc;
+assign udp_crc = 16'd0;
+
 //----------------------------------------------------------------------------
 
-wire			[31:0]		ds_data;
+wire			[15:0]		ds_data;
 wire							ds_wrreq;
-assign ds_wrreq = (state >= 5'h02 && state <= 5'h15) ?  1'b1 : 1'b0;
+assign ds_wrreq = (state >= 5'h02 && state <= 5'h16) ?  1'b1 : 1'b0;
 
 always_comb begin
 	ds_data = 32'd0;
 	case(state)
-		case 4'h02: ds_data = dst_mac[47:32];
-		case 4'h03: ds_data = dst_mac[31:16];
-		case 4'h04: ds_data = dst_mac[16:0];
+		5'h02: ds_data = dst_mac[47:32];
+		5'h03: ds_data = dst_mac[31:16];
+		5'h04: ds_data = dst_mac[16:0];
 		
-		case 4'h05: ds_data = src_mac[47:32];
-		case 4'h06: ds_data = src_mac[31:16];
-		case 4'h07: ds_data = src_mac[15:0];
+		5'h05: ds_data = src_mac[47:32];
+		5'h06: ds_data = src_mac[31:16];
+		5'h07: ds_data = src_mac[15:0];
 		
-		case 4'h08: ds_data = 16'h0800;
+		5'h08: ds_data = 16'h0800;
 		
-		case 4'h09: ds_data = ip_hdr1[31:15];
-		case 4'h0A: ds_data = ip_hdr1[16:0];
-		case 4'h0B: ds_data = ip_hdr2[31:15];
-		case 4'h0C: ds_data = ip_hdr2[16:0];
-		case 4'h0D: ds_data = ip_hdr3[31:15];
-		case 4'h0E: ds_data = ip_hdr3[16:0];
+		5'h09: ds_data = ip_hdr1[31:16];
+		5'h0A: ds_data = ip_hdr1[15:0];
+		5'h0B: ds_data = ip_hdr2[31:16];
+		5'h0C: ds_data = ip_hdr2[15:0];
+		5'h0D: ds_data = ip_hdr3[31:16];
+		5'h0E: ds_data = ip_hdr3[15:0];
 		
-		case 4'h0F: ds_data = src_ip[31:16];
-		case 4'h10: ds_data = src_ip[15:0];
+		5'h0F: ds_data = src_ip[31:16];
+		5'h10: ds_data = src_ip[15:0];
 		
-		case 4'h11: ds_data = dst_ip[31:16];
-		case 4'h12: ds_data = dst_ip[15:0];
+		5'h11: ds_data = dst_ip[31:16];
+		5'h12: ds_data = dst_ip[15:0];
 		
-		case 4'h13: ds_data = dst_port;
-		case 4'h14: ds_data = src_port;
+		5'h13: ds_data = dst_port;
+		5'h14: ds_data = src_port;
 		
-		case 4'h0E: ds_data = udp_len;
-		case 4'h0E: ds_data = udp_crc;
+		5'h15: ds_data = udp_len;
+		5'h16: ds_data = udp_crc;
 	endcase
 end
 
 //----------------------------------------------------------------------------
 
 tx_fifo_out tx_fifo_out_unit(
-	.aclr(~rst_n),
+	.aclr(start),
 	
 	.wrclk(clk),
-	.data(ds_data),
+	.data({ds_data[7:0], ds_data[15:8]}),
 	.wrreq(ds_wrreq),
 	
 	.rdclk(clk),
-	.rdreq(1'b1),
+	.rdreq(fifo_rd),
 	.q(fifo_tx_data),
-	.empty(fifo_tx_empty)
+	.rdempty(fifo_tx_empty)
 );
 
+wire							fifo_rd;
 wire							fifo_tx_empty;
 wire			[7:0]			fifo_tx_data;
-//assign o_tx_en = ~fifo_tx_empty;
+
+//----------------------------------------------------------------------------
+
+reg			[2:0]			send_state;
+reg			[2:0]			next_send_state;
+
+reg			[2:0]			prm_count;
+wire							prm_inc;
+reg			[2:0]			crc_count;
+wire							crc_inc;
+reg			[15:0]		udp_count;
+wire							udp_inc;
+
+wire							tx_en;
+wire							calc_crc32;
+
+reg			[7:0]			udp_stream;
+always_ff @ (posedge clk) udp_stream <= i_udp_stream;
+
+always_ff @ (posedge clk or negedge rst_n)
+	if(~rst_n)
+		send_state <= 4'd0;
+	else 
+		send_state <= next_send_state;
+
+always_comb begin
+	o_tx_data = 8'h00;
+	next_send_state = send_state;
+	prm_inc = 1'b0;
+	crc_inc = 1'b0;
+	udp_inc = 1'b0;
+	fifo_rd = 1'b0;
+	tx_en = 1'b0;
+	calc_crc32 = 1'b0;
+	sender_ready = 1'b0;
+	o_udp_rd = 1'b0;
+	case(send_state)
+		3'h00: {tx_en, calc_crc32, next_send_state} = (state >= 5'h02) ? {1'b0, 1'b0, 3'h01} : {1'b0, 1'b0, 3'h00}; 
+		3'h01: {calc_crc32, prm_inc, next_send_state, o_tx_data} = (prm_count != 3'h07) ? {1'b0, 1'b1, 3'h01, 8'h55} : {1'b0, 1'b1, 3'h02, 8'hD5};
+		3'h02: {o_udp_rd, calc_crc32, fifo_rd, udp_inc, crc_inc, next_send_state, o_tx_data} = (~fifo_tx_empty) ? {1'b0, 1'b1, 1'b1, 1'b0, 1'b0, 3'h02, fifo_tx_data} : 
+						((|udp_len) ? {1'b1, 1'b1, 1'b0, 1'b1, 1'b0, 3'h03, udp_stream} : {1'b0, 1'b0, 1'b0, 1'b0, 1'b1, 3'h04, crc32[7:0]});
+		3'h03: {o_udp_rd, calc_crc32, udp_inc, crc_inc, next_send_state, o_tx_data} = (udp_count != udp_len) ? {1'b1, 1'b1, 1'b1, 1'b0, 3'h03, udp_stream} : 
+						{1'b0, 1'b0, 1'b0, 1'b1, 3'h04, crc32[7:0]};
+		3'h04: {tx_en, calc_crc32, crc_inc, next_send_state, o_tx_data} = (crc_count != 3'h04) ? {1'b1, 1'b0, 1'b1, 3'h04, crc32[7:0]} : {1'b0, 1'b0, 1'b0, 3'h05, 8'h00};
+		3'h05: {tx_en, , sender_ready, next_send_state} = (state == 1) ? {1'b0, 1'b0, 1'b1, 3'h00} : {1'b0, 1'b0, 1'b1, 3'h05};
+	endcase
+end
+
+always_ff @ (posedge clk)
+	if(prm_inc) 
+		prm_count <= prm_count + 1'b1; 
+	else
+		prm_count <= 3'h00;
+		
+always_ff @ (posedge clk)
+	if(crc_inc)
+		crc_count <= crc_count + 1'b1;
+	else
+		crc_count <= 3'h00;
+		
+always_ff @ (posedge clk)
+	if(udp_inc)
+		udp_count <= udp_count + 1'b1;
+	else
+		udp_count <= 16'h0000;
+
+assign o_tx_en = (send_state >= 3'h01 && send_state <= 3'h04) ? 1'b1 : 1'b0;
 
 // ===========================================================================
 // CRC 32
 // ===========================================================================
+
 reg		[0:0]			calc_crc_flag;
+
 always @ (posedge clk or negedge rst_n) begin
 	if(1'b0 == rst_n)
 		calc_crc_flag <= 1'b0;
 	else
-		if(new_state != state) begin
-			if(new_state == SEND_DST_MAC)
+		if(send_state != next_send_state) begin
+			if(next_send_state == 3'h02)
 				calc_crc_flag <= 1'b1;
 			else 
-				if(new_state == SEND_CRC32)
+				if(next_send_state == 3'h04)
 					calc_crc_flag <= 1'b0;
 		end
 end
 
 wire		[31:0]		crc32;
 
+assign o_crc_data = calc_crc32 ? o_tx_data : 8'hFF;
+
 calc_crc32 u_crc32(
 	.rst_n(rst_n),
 	.clk(clk),
-	.i_calc(calc_crc_flag),
-	.i_vl(tx_en),
-	.i_data(tx_data),
+	.i_calc(calc_crc32),
+	.i_vl(o_tx_en),
+	.i_data(o_tx_data),
 	.o_crc32(crc32)
 );
+
+assign o_crc32 = crc32;
 
 endmodule

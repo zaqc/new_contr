@@ -109,10 +109,10 @@ reg			[1:0]			send_pkt_type;
 wire			[7:0]			udp_tx_data;
 wire							udp_tx_en;
 
-assign o_tx_data = udp_tx_data;
+//assign o_tx_data = udp_tx_data;
 //(send_pkt_type == 2'b01) ? arp_tx_data : 
 //((send_pkt_type == 2'b10) ? udp_tx_data : 8'd0);
-assign o_tx_en = udp_tx_en;
+//assign o_tx_en = udp_tx_en;
 //(send_pkt_type == 2'b01) ? arp_tx_en : 
 //((send_pkt_type == 2'b10) ? udp_tx_en : 1'b0);
 
@@ -261,7 +261,8 @@ always_ff @ (posedge i_tx_clk or negedge rst_n)
 				8'd60: udp_data_len <= i_tx_wr_data[15:0];
 			endcase
 
-udp_send usp_send_unit(
+//udp_send usp_send_unit(
+udp_packet udp_packet_unit(
 	.rst_n(rst_n),
 	.clk(i_tx_clk),
 
@@ -271,7 +272,7 @@ udp_send usp_send_unit(
 	.i_dst_ip(dst_ip),
 	.i_src_port(src_port),
 	.i_dst_port(dst_port),
-	.i_data_len(udp_data_len),
+	.i_udp_len(udp_data_len),
 
 //	.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
 //	.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
@@ -281,8 +282,8 @@ udp_send usp_send_unit(
 //	.i_dst_port(cmd_dst_port),
 //	.i_data_len(cmd_udp_data_len),
 	
-	.i_in_data(udp_stream_data),
-	.o_rd(udp_stream_rd),
+	.i_udp_stream(udp_stream_data),
+	.o_udp_rd(udp_stream_rd),
 	
 //	.i_dst_mac(48'h0c54a5312485),
 //	.i_src_mac(48'h0023543c471b),
@@ -292,8 +293,8 @@ udp_send usp_send_unit(
 //	.i_dst_port(16'd2179),
 //	.i_data_len(16'd1024),
 	
-	.o_tx_data(udp_tx_data),
-	.o_tx_en(udp_tx_en),
+	.o_tx_data(o_tx_data),
+	.o_tx_en(o_tx_en),
 	
 	.i_enable(send_udp)
 );
