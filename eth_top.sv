@@ -26,10 +26,14 @@ module eth_top(
 	output	[7:0]		o_tx_data,
 	output				o_tx_en,
 		
-	output	[7:0]		o_green_led
+	output	[7:0]		o_green_led,
+
+	output	[7:0]		o_dbg_crc32_data,
+	output				o_dbg_crc32_flag,
+	output	[31:0]	o_dbg_crc32
 );
 
-assign o_irq_tx = 1'b0;
+assign o_irq_tx = 1'b0; //~prev_enable & snd_enable; //1'b0;
 
 // ===========================================================================
 // recv frame
@@ -226,6 +230,7 @@ always_ff @ (posedge i_tx_clk or negedge rst_n)
 		if(udp_stream_rd)
 			udp_stream_data <= udp_stream_data + 8'd1;
 
+/*
 reg		[47:0]		src_mac;
 reg		[47:0]		dst_mac;
 reg		[31:0]		src_ip;
@@ -260,19 +265,150 @@ always_ff @ (posedge i_tx_clk or negedge rst_n)
 				
 				8'd60: udp_data_len <= i_tx_wr_data[15:0];
 			endcase
+*/
 
-//udp_send usp_send_unit(
+
+/*
+pack_gen pack_gen_unit(
+	.i_rst(~rst_n),
+	.i_clk(i_tx_clk),
+	
+	.o_data(o_tx_data),
+	.o_tx_en(o_tx_en)
+);
+*/
+
+reg			[7:0]				udp_data[18];
+
+initial begin
+	udp_data[0] = 8'h01;
+	udp_data[1] = 8'h02;
+	udp_data[2] = 8'h03;
+	udp_data[3] = 8'h04;
+	udp_data[4] = 8'h01;
+	udp_data[5] = 8'h01;
+	udp_data[6] = 8'h01;
+	udp_data[7] = 8'h01;
+	udp_data[8] = 8'h01;
+	udp_data[9] = 8'h01;
+	udp_data[10] = 8'h01;
+	udp_data[11] = 8'h01;
+	udp_data[12] = 8'h01;
+	udp_data[13] = 8'h01;
+	udp_data[14] = 8'h01;
+	udp_data[15] = 8'h01;
+	udp_data[16] = 8'h01;
+	udp_data[17] = 8'h01;
+end
+
+reg			[4:0]			udp_data_ptr;
+
+always_ff @ (posedge i_tx_clk or negedge rst_n)
+	if(~rst_n)
+		udp_data_ptr <= 5'd0;
+	else
+		if(~udp_stream_rd)
+			udp_data_ptr <= 5'd0;
+		else
+			udp_data_ptr <= udp_data_ptr + 5'd1;
+			
+
+/*			
+reg			[7:0]				pkt[128];
+// michelle
+always_ff @ (posedge i_tx_clk) 
+	if(send_udp) begin
+		{ pkt[0], pkt[1], pkt[2], pkt[3], pkt[4], pkt[5] } = cmd_dst_mac;
+		{ pkt[6], pkt[7], pkt[8], pkt[9], pkt[10], pkt[11] } = cmd_dst_mac;
+		{ pkt[12], pkt[13] } = 16'h0800;
+		
+		udp_data[0] <= cmd_dst_mac[47:40];
+		udp_data[1] <= cmd_dst_mac[39:32];
+		udp_data[2] <= cmd_dst_mac[31:24];
+		udp_data[3] <= cmd_dst_mac[23:16];
+		udp_data[4] <= cmd_dst_mac[15:8];
+		udp_data[5] <= cmd_dst_mac[7:0];
+		udp_data[6] <= cmd_src_mac[47:40];
+		udp_data[7] <= cmd_src_mac[39:32];
+		udp_data[8] <= cmd_src_mac[31:24];
+		udp_data[9] <= cmd_src_mac[23:16];
+		udp_data[10] <= cmd_src_mac[15:8];
+		udp_data[11] <= cmd_src_mac[7:0];
+	end
+*/
+
+udp_pkt_send udp_send_unit(
+	.rst_n(rst_n),
+	.clk(i_tx_clk),
+
+//	.i_dst_mac(dst_mac),	
+//	.i_src_mac(src_mac),
+//	.i_src_ip(src_ip),
+//	.i_dst_ip(dst_ip),
+//	.i_src_port(src_port),
+//	.i_dst_port(dst_port),
+//	.i_udp_len(udp_data_len),
+
+//	.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
+//	.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
+//	.i_src_ip(cmd_src_ip),
+//	.i_dst_ip(cmd_dst_ip),
+//	.i_src_port(cmd_src_port),
+//	.i_dst_port(cmd_dst_port),
+//	.i_data_len(cmd_udp_data_len),
+	
+	.i_in_data(udp_data_ptr < 18 ? udp_data[udp_data_ptr] : 8'hFF), //stream_data),
+	.o_rd(udp_stream_rd),
+	
+	.i_dst_mac(48'hd8d38526c578),
+	.i_src_mac(48'h0023543c471b),
+	.i_src_ip(32'hc0a84d21),
+	.i_dst_ip(32'hc0a84dd9),
+	.i_src_port(16'hC350),
+	.i_dst_port(16'hC360),
+	.i_data_len(16'd18),
+	
+	.o_tx_data(o_tx_data),
+	.o_tx_en(o_tx_en),
+	
+	.i_enable(send_udp),
+	//.i_enable(~prev_enable & snd_enable), //send_udp)
+	
+	.o_dbg_crc32_data(o_dbg_crc32_data),
+	.o_dbg_crc32_flag(o_dbg_crc32_flag),
+	.o_dbg_crc32(o_dbg_crc32)
+);
+
+reg			[26:0]		dly_cntr;
+always_ff @ (posedge i_tx_clk or negedge rst_n)
+	if(~rst_n)
+		dly_cntr <= 27'h3FFFFFE;
+	else
+		dly_cntr <= dly_cntr + 27'd1;
+		
+wire							snd_enable;
+assign snd_enable = dly_cntr[26];
+
+reg			[0:0]			prev_enable;
+always_ff @ (posedge i_tx_clk or negedge rst_n)
+	if(~rst_n)
+		prev_enable <= 1'b0;
+	else
+		prev_enable <= snd_enable;
+
+
+/*
 udp_packet udp_packet_unit(
 	.rst_n(rst_n),
 	.clk(i_tx_clk),
 
-	.i_dst_mac(dst_mac),	
-	.i_src_mac(src_mac),
-	.i_src_ip(src_ip),
-	.i_dst_ip(dst_ip),
-	.i_src_port(src_port),
-	.i_dst_port(dst_port),
-	.i_udp_len(udp_data_len),
+//	.i_dst_mac(dst_mac),	
+//	.i_src_mac(src_mac),
+//	.i_src_ip(src_ip),
+//	.i_dst_ip(dst_ip),
+//	.i_src_port(src_port),
+//	.i_dst_port(dst_port),
+//	.i_udp_len(udp_data_len),
 
 //	.i_dst_mac(cmd_dst_mac),	// 00:23:54:3c:47:1b
 //	.i_src_mac(cmd_src_mac),	//	0c:54:a5:31:24:85
@@ -296,7 +432,8 @@ udp_packet udp_packet_unit(
 	.o_tx_data(o_tx_data),
 	.o_tx_en(o_tx_en),
 	
-	.i_enable(send_udp)
+	.i_enable(~prev_enable & snd_enable) //send_udp)
 );
+*/
 
 endmodule

@@ -7,7 +7,8 @@ module eth_rgmii (
 	output	[31:0]	o_rx_pkt_data,
 	input					i_rx_pkt_rd,
 
-	output				o_pll_locked,
+	output				o_rx_rst_n,
+	output				o_tx_rst_n,
 	
 	input					i_tx_wr,
 	input		[7:0]		i_tx_wr_addr,
@@ -32,6 +33,15 @@ module eth_rgmii (
 
 //----------------------------------------------------------------------------
 
+//gtx_out gtx_out_unit(
+//		.datain_h(1'b1),
+//		.datain_l(1'b0),
+//		.outclock(pll_gtx_clk),
+//		.dataout(o_gtx_clk)
+//);
+
+assign o_gtx_clk = pll_gtx_clk;
+
 eth_pll eth_pll_unit(
 	.inclk0(i_rx_clk),
 	
@@ -46,10 +56,47 @@ wire							pll_clk_tx;
 wire							pll_gtx_clk;
 wire							pll_locked;
 
-assign o_gtx_clk = pll_gtx_clk;
-assign o_pll_locked = pll_locked;
+//----------------------------------------------------------------------------
+
+reg			[0:0]			tx_rst_n;
+reg			[7:0]			tx_rst_cntr;
+always_ff @ (posedge pll_clk_tx)
+	if(~pll_locked) begin
+		tx_rst_n <= 1'b0;
+		tx_rst_cntr <= 8'd0;
+	end
+	else
+		if(~&tx_rst_cntr) begin
+			tx_rst_cntr <= tx_rst_cntr + 8'd1;
+			tx_rst_n <= 1'b0;
+		end
+		else
+			tx_rst_n <= 1'b1;
+assign o_tx_rst_n = tx_rst_n;
+
+//----------------------------------------------------------------------------
+
+reg			[0:0]			rx_rst_n;
+reg			[7:0]			rx_rst_cntr;
+always_ff @ (posedge pll_clk_rx)
+	if(~pll_locked) begin
+		rx_rst_n <= 1'b0;
+		rx_rst_cntr <= 8'd0;
+	end
+	else
+		if(~&rx_rst_cntr) begin
+			rx_rst_cntr <= rx_rst_cntr + 8'd1;
+			rx_rst_n <= 1'b0;
+		end
+		else
+			rx_rst_n <= 1'b1;
+assign o_rx_rst_n = rx_rst_n;
+
+//----------------------------------------------------------------------------
+
 assign o_pll_tx_clk = pll_clk_tx;
 assign o_pll_rx_clk = pll_clk_rx;
+
 //----------------------------------------------------------------------------
 
 eth_in eth_in_unit(

@@ -271,20 +271,20 @@ nios_sys nios_sys_unit(
 	.clk_clk(clk),
 
 	.clk_tx_clk(pll_tx_clk),			//- tx clock -+
-	.reset_tx_reset_n(pll_locked),	//            |
+	.reset_tx_reset_n(tx_rst_n),	//            |
 	.irq_export(tx_irq),					//            |
 	.cmd_addr(cmd_addr),					//            |
 	.cmd_data(cmd_data),					//            |
 	.cmd_wr(cmd_wr),						//------------+
 	
 	.clk_rx_clk(pll_rx_clk),			//- rx clock -+
-	.reset_rx_reset_n(pll_locked),	//				  |
+	.reset_rx_reset_n(rx_rst_n),	//				  |
 	.rx_cmd_addr(rx_cmd_addr),			//				  |
 	.rx_pkt_data(rx_pkt_data),			//				  |
 	.rx_pkt_rd(rx_pkt_rd),				//				  |
 	.pin_export(rx_irq),					//------------+
 	
-	.tx_reset_reset_n(pll_locked),
+	.tx_reset_reset_n(tx_rst_n),
 	.tx_clk_clk(pll_tx_clk),
 	
 	.mm_tx_write(tx_write),
@@ -332,7 +332,8 @@ eth_rgmii eth_rgmii_unit(
 	.o_rx_pkt_data(rx_pkt_data),
 	.i_rx_pkt_rd(rx_pkt_rd),
 	
-	.o_pll_locked(pll_locked),
+	.o_rx_rst_n(rx_rst_n),
+	.o_tx_rst_n(tx_rst_n),
 	
 	.i_tx_wr(tx_write),
 	.i_tx_wr_addr(tx_writeaddr),
@@ -355,11 +356,12 @@ eth_rgmii eth_rgmii_unit(
 	.o_green_led(leds_n)
 );
 
-wire						pll_locked;
 wire						tx_irq;
 wire						rx_irq;
 wire						pll_rx_clk;
+wire						rx_rst_n;
 wire						pll_tx_clk;
+wire						tx_rst_n;
 
 //----------------------------------------------------------------------------
 

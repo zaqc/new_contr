@@ -70,7 +70,7 @@ always @ (posedge clk or negedge rst_n) begin
 	else begin
 		if(1'b1 == i_calc) begin
 			if(i_vl == 1'b1)
-				crc <= NextCRC(i_data , crc);
+				crc <= NextCRC(i_data , crc); //32'h2E8D50CF; //
 			cntr <= 2'd0;
 		end
 		else begin

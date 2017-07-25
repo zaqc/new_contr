@@ -18,11 +18,11 @@ module command(
 	output	[31:0]		o_dst_ip,
 	
 	output	[15:0]		o_src_port,
-	output	[15:0]		o_dst_port,
+	output 	[15:0]		o_dst_port,
 	
 	output	[15:0]		o_udp_data_len,
 	
-	output [1:0]			o_send_packet
+	output	[1:0]			o_send_packet
 );
 
 //----------------------------------------------------------------------------
@@ -42,37 +42,33 @@ assign o_send_packet = send_packet;
 
 //----------------------------------------------------------------------------
 
-reg		[47:0]		src_mac;
-
-always_ff @ (posedge clk or negedge rst_n)
-	if(~rst_n)
-		src_mac <= 48'd0;
-	else
-		if(i_cmd_wr)
-			if(i_cmd_addr == 8'd24)
-				src_mac[47:16] <= i_cmd_data;
-			else
-				if(i_cmd_addr == 8'd28)
-					src_mac[15:0] <= i_cmd_data[15:0];
-
-assign o_src_mac = src_mac;
+//
+//always_ff @ (posedge clk or negedge rst_n)
+//	if(~rst_n)
+//		src_mac <= 48'd0;
+//	else
+//		if(i_cmd_wr)
+//			if(i_cmd_addr == 8'd24)
+//				src_mac[47:16] <= i_cmd_data;
+//			else
+//				if(i_cmd_addr == 8'd28)
+//					src_mac[15:0] <= i_cmd_data[15:0];
+//
 
 //----------------------------------------------------------------------------
 
-reg		[47:0]		dst_mac;
-
-always_ff @ (posedge clk or negedge rst_n)
-	if(~rst_n)
-		dst_mac <= 48'd0;
-	else
-		if(i_cmd_wr)
-			if(i_cmd_addr == 8'd32)
-				dst_mac[47:16] <= i_cmd_data;
-			else
-				if(i_cmd_addr == 8'd36)
-					dst_mac[15:0] <= i_cmd_data[15:0];
-
-assign o_dst_mac = dst_mac;
+//
+//always_ff @ (posedge clk or negedge rst_n)
+//	if(~rst_n)
+//		dst_mac <= 48'd0;
+//	else
+//		if(i_cmd_wr)
+//			if(i_cmd_addr == 8'd32)
+//				dst_mac[47:16] <= i_cmd_data;
+//			else
+//				if(i_cmd_addr == 8'd36)
+//					dst_mac[15:0] <= i_cmd_data[15:0];
+//
 
 //----------------------------------------------------------------------------
 
@@ -81,6 +77,12 @@ assign o_SHA = arp_src_mac;
 assign o_SPA = arp_src_ip;
 assign o_THA = arp_dst_mac;
 assign o_TPA = arp_dst_ip;
+
+reg		[47:0]		src_mac;
+assign o_src_mac = src_mac;
+
+reg		[47:0]		dst_mac;
+assign o_dst_mac = dst_mac;
 
 reg		[31:0]		src_ip;
 assign o_src_ip = src_ip;
@@ -94,10 +96,8 @@ assign o_src_port = src_port;
 reg		[15:0]		dst_port;
 assign o_dst_port = dst_port;
 
-assign o_udp_data_len = udp_data_len;
-
-
 reg		[15:0]		udp_data_len;
+assign o_udp_data_len = udp_data_len;
 
 reg		[1:0]			arp_operation;
 
@@ -108,8 +108,8 @@ reg		[31:0]		arp_src_ip;
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n) begin
-//		src_mac = 48'd0;
-//		dst_mac = 48'd0;
+		src_mac <= 48'd0;
+		dst_mac <= 48'd0;
 		src_ip <= 32'd0;
 		dst_ip <= 32'd0;
 		src_port <= 16'd0;
@@ -124,10 +124,10 @@ always_ff @ (posedge clk or negedge rst_n)
 	else
 		if(i_cmd_wr)
 			case(i_cmd_addr)
-//				5'h03: src_mac[47:16] = i_cmd_data[31:0];
-//				5'h04: src_mac[15:0] = i_cmd_data[15:0];				
-//				5'h05: dst_mac[47:16] = i_cmd_data[31:0];
-//				5'h06: dst_mac[15:0] = i_cmd_data[15:0];
+				8'd24: src_mac[47:16] <= i_cmd_data[31:0];
+				8'd28: src_mac[15:0] <= i_cmd_data[15:0];				
+				8'd32: dst_mac[47:16] <= i_cmd_data[31:0];
+				8'd36: dst_mac[15:0] <= i_cmd_data[15:0];
 				
 				8'd40: src_ip <= i_cmd_data;
 				8'd44: dst_ip <= i_cmd_data;

@@ -1,4 +1,4 @@
-module udp_send(
+module udp_pkt_send(
 	input							clk,
 	input							rst_n,
 	
@@ -13,61 +13,39 @@ module udp_send(
 	input	reg	[15:0]		i_src_port,
 	input	reg	[15:0]		i_dst_port,
 	
-	input		[7:0]				i_in_data,
-	input		[15:0]			i_data_len,
+	input			[7:0]			i_in_data,
+	input			[15:0]		i_data_len,
 	output						o_rd,
 	
 	input							i_enable,
 	output						o_ready,
 
-	output	[7:0]				o_dbg_crc32_data,
+	output		[7:0]			o_dbg_crc32_data,
 	output						o_dbg_crc32_flag,
-	output	[31:0]			o_dbg_crc32
+	output		[31:0]		o_dbg_crc32
 );
 
-reg			[47:0]		dst_mac;
-reg			[47:0]		src_mac;
-reg			[31:0]		dst_ip;
-reg			[31:0]		src_ip;
-reg			[15:0]		dst_port;
-reg			[15:0]		src_port;
-reg			[15:0]		data_len;
+reg			[7:0]			pkt[42];
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n) begin
-//		dst_mac <= 48'd0;
-//		src_mac <= 48'd0;
-//		dst_ip <= 32'd0;
-//		src_ip <= 32'd0;
-//		dst_port <= 16'd0;
-//		src_port <= 16'd0;
-//		data_len <= 16'd0;
-
-		dst_mac <= 48'hd8d38526c578; //48'h0023543c471b;
-		src_mac <= 48'h0023543c471b; // 48'h0c54a5312485;
-		src_ip <= 32'hc0a84d21; //32'h0A000064;
-		dst_ip <= 32'hc0a84dd9; //32'h0A000002;
-		src_port <= 16'hc350; //16'd5152;
-		dst_port <= 16'hc360; //16'd2179;
-		data_len <= 16'd18; //16'd16;
+		for(integer i = 0; i < 42; i++)
+			pkt[i] = 8'h00;
 	end
-	else 
+	else	
 		if(state != new_state && new_state == SEND_PREAMBLE) begin
-			dst_mac <= i_dst_mac;
-			src_mac <= i_src_mac;
-			dst_ip <= i_dst_ip;
-			src_ip <= i_src_ip;
-			dst_port <= i_dst_port;
-			src_port <= i_src_port;
-			data_len <= i_data_len;
-
-//			dst_mac <= 48'hd8d38526c578; //48'h0023543c471b;
-//			src_mac <= 48'h0023543c471b; // 48'h0c54a5312485;
-//			src_ip <= 32'hc0a84d21; //32'h0A000064;
-//			dst_ip <= 32'hc0a84dd9; //32'h0A000002;
-//			src_port <= 16'hc350; //16'd5152;
-//			dst_port <= 16'hc360; //16'd2179;
-//			data_len <= 16'd18; //16'd16;
+			{pkt[0], pkt[1], pkt[2], pkt[3], pkt[4], pkt[5]} <= i_dst_mac;
+			{pkt[6], pkt[7], pkt[8], pkt[9], pkt[10], pkt[11]} <= i_src_mac;
+			{pkt[12], pkt[13]} <= 16'h0800;
+			{pkt[14], pkt[15], pkt[16], pkt[17]} <= ip_hdr1;
+			{pkt[18], pkt[19], pkt[20], pkt[21]} <= ip_hdr2;
+			{pkt[22], pkt[23], pkt[24], pkt[25]} <= ip_hdr3;
+			{pkt[26], pkt[27], pkt[28], pkt[29]} <= i_src_ip;
+			{pkt[30], pkt[31], pkt[32], pkt[33]} <= i_dst_ip;
+			{pkt[34], pkt[35]} <= i_src_port;
+			{pkt[36], pkt[37]} <= i_dst_port;
+			{pkt[38], pkt[39]} <= udp_length;
+			{pkt[40], pkt[41]} <= udp_crc;
 		end
 
 // ===========================================================================
@@ -85,7 +63,7 @@ parameter	[3:0]		ip_header_ver = 4'h4;		// 4 - for IPv4
 parameter	[3:0]		ip_header_size = 4'h5;		// size in 32bit word's
 parameter	[7:0]		ip_DSCP_ECN = 8'h00;			// ?
 wire			[15:0]	ip_pkt_size;
-assign  ip_pkt_size = data_len + 16'h001C;	// 16'h002E size of UDP packet
+assign  ip_pkt_size = i_data_len + 16'h001C;	// 16'h002E size of UDP packet
 wire			[31:0]	ip_hdr1;
 assign ip_hdr1 = {ip_header_ver, ip_header_size, ip_DSCP_ECN, ip_pkt_size};
 
@@ -101,7 +79,7 @@ wire			[15:0]	ip_pkt_CRC;						// pkt flags
 wire			[31:0]	tmp_crc;
 assign tmp_crc = ip_hdr1[31:16] + ip_hdr1[15:0] +
 	ip_hdr2[31:16] + ip_hdr2[15:0] + ip_hdr3[31:16] + // ip_hdr3[15:0] +
-	src_ip[31:16] + src_ip[15:0] + dst_ip[31:16] + dst_ip[15:0];
+	i_src_ip[31:16] + i_src_ip[15:0] + i_dst_ip[31:16] + i_dst_ip[15:0];
 assign ip_pkt_CRC = ~(tmp_crc[31:16] + tmp_crc[15:0]);
 wire			[31:0]	ip_hdr3;	
 assign ip_hdr3 = {ip_pkt_TTL, ip_pkt_type, ip_pkt_CRC};
@@ -115,23 +93,12 @@ enum logic [4:0] {
 	IDLE = 5'd1,
 	ETH_START = 5'd2,
 	SEND_PREAMBLE = 5'd3,
-	SEND_DST_MAC = 5'd4,
-	SEND_SRC_MAC = 5'd5,
-	SEND_ETHER_TYPE = 5'd6,
-	SEND_HDR1 = 5'd7,
-	SEND_HDR2 = 5'd8,
-	SEND_HDR3 = 5'd9,
-	SEND_SRC_IP = 5'd10,
-	SEND_DST_IP = 5'd11,
-	SEND_UDP_SRC_PORT = 5'd12,
-	SEND_UDP_DST_PORT = 5'd13,
-	SEND_UDP_LEN = 5'd14,
-	SEND_UDP_CRC = 5'd15,
-	SEND_UDP_DATA = 5'd16,
-	WAIT_FOR_CRC32 = 5'd17,
-	SEND_CRC32 = 5'd18,
-	DELAY = 5'd19,
-	SET_READY = 5'd20
+	SEND_HEADER = 5'd4,
+	SEND_UDP_DATA = 5'd5,
+	WAIT_FOR_CRC32 = 5'd6,
+	SEND_CRC32 = 5'd7,
+	DELAY = 5'd8,
+	SET_READY = 5'd9
 } new_state, state;
 
 always_ff @ (posedge clk or negedge rst_n)
@@ -146,22 +113,11 @@ always_comb begin
 		NONE: if(rst_n) new_state = IDLE;
 		IDLE: if(i_enable) new_state = ETH_START;
 		ETH_START: if(~i_enable) new_state = SEND_PREAMBLE;
-		SEND_PREAMBLE: if(ds_cnt == 16'd8) new_state = SEND_DST_MAC;
-		SEND_DST_MAC: if(ds_cnt == 16'd6) new_state = SEND_SRC_MAC;
-		SEND_SRC_MAC: if(ds_cnt == 16'd6) new_state = SEND_ETHER_TYPE;
-		SEND_ETHER_TYPE: if(ds_cnt == 16'd2) new_state = SEND_HDR1;
-		SEND_HDR1: if(ds_cnt == 16'd4) new_state = SEND_HDR2;
-		SEND_HDR2: if(ds_cnt == 16'd4) new_state = SEND_HDR3;
-		SEND_HDR3: if(ds_cnt == 16'd4) new_state = SEND_SRC_IP;
-		SEND_SRC_IP: if(ds_cnt == 16'd4) new_state = SEND_DST_IP;
-		SEND_DST_IP: if(ds_cnt == 16'd4) new_state = SEND_UDP_SRC_PORT;
-		SEND_UDP_SRC_PORT: if(ds_cnt == 16'd2) new_state = SEND_UDP_DST_PORT;
-		SEND_UDP_DST_PORT: if(ds_cnt == 16'd2) new_state = SEND_UDP_LEN;
-		SEND_UDP_LEN: if(ds_cnt == 16'd2) new_state = SEND_UDP_CRC;
-		SEND_UDP_CRC: if(ds_cnt == 16'd2) new_state = SEND_UDP_DATA;
-		SEND_UDP_DATA: if(ds_cnt == data_len) new_state = WAIT_FOR_CRC32;
+		SEND_PREAMBLE: if(ds_cnt == 16'd7) new_state = SEND_HEADER;
+		SEND_HEADER: if(ds_cnt == 16'd41) new_state = SEND_UDP_DATA;
+		SEND_UDP_DATA: if(ds_cnt == i_data_len || ds_cnt + 16'd1 == i_data_len) new_state = WAIT_FOR_CRC32;
 		WAIT_FOR_CRC32: new_state = SEND_CRC32;
-		SEND_CRC32: if(ds_cnt == 16'd4) new_state = DELAY;
+		SEND_CRC32: if(ds_cnt == 16'd3) new_state = DELAY;
 		DELAY: if(ds_cnt == 16'd10) new_state = SET_READY;
 		SET_READY: if(~i_enable) new_state = IDLE;
 	endcase
@@ -169,8 +125,16 @@ end
 
 wire							tmp_tx_en;
 assign tmp_tx_en = (state > ETH_START && state < DELAY && new_state < DELAY) ? 1'b1 : 1'b0;
+
 wire			[7:0]			tmp_tx_data;
-assign tmp_tx_data = (state == SEND_UDP_DATA) ? i_in_data : ds[63:56];
+always_comb begin
+	case(state)
+		SEND_PREAMBLE: tmp_tx_data = (ds_cnt != 16'd7) ? 8'h55 : 8'hD5;
+		SEND_HEADER: tmp_tx_data = pkt[ds_cnt];
+		SEND_UDP_DATA: tmp_tx_data = i_in_data;
+		default: tmp_tx_data = 8'h00;
+	endcase
+end
 
 always_ff @ (posedge clk) begin
 	dly_tx_data <= tmp_tx_data;
@@ -187,43 +151,20 @@ assign o_tx_data = (state == SEND_CRC32) ? crc32[7:0] : dly_tx_data;
 //	DATA SHIFT & SEND
 // ===========================================================================
 
-reg			[63:0]		ds;
 reg			[15:0]		ds_cnt;
-always_ff @ (posedge clk or negedge rst_n) begin
-	if(rst_n == 1'b0) begin
-		ds <= 64'd0;
+always_ff @ (posedge clk or negedge rst_n)
+	if(rst_n == 1'b0)
 		ds_cnt <= 16'd0;
-	end
-	else begin
-		if(new_state != state) begin
-			case(new_state)
-				SEND_PREAMBLE: ds <= 64'h55555555555555d5;
-				SEND_DST_MAC: ds[63:16] <= dst_mac;
-				SEND_SRC_MAC: ds[63:16] <= src_mac;
-				SEND_ETHER_TYPE: ds[63:48] <= 16'h0800;	// UDP frame
-				SEND_HDR1: ds[63:32] <= ip_hdr1;
-				SEND_HDR2: ds[63:32] <= ip_hdr2;
-				SEND_HDR3: ds[63:32] <= ip_hdr3;
-				SEND_SRC_IP: ds[63:32] <= src_ip;
-				SEND_DST_IP: ds[63:32] <= dst_ip;
-				SEND_UDP_SRC_PORT: ds[63:48] <= src_port;
-				SEND_UDP_DST_PORT: ds[63:48] <= dst_port;
-				SEND_UDP_LEN: ds[63:48] <= udp_length;
-				SEND_UDP_CRC: ds[63:48] <= udp_crc;
-			endcase
-			ds_cnt <= 16'd1;
-		end 
-		else begin
-			ds <= {ds[55:0], 8'h00};
+	else 
+		if(new_state != state)
+			ds_cnt <= 16'd0;
+		else
 			ds_cnt <= ds_cnt + 16'd1;
-		end
-	end
-end
 
 //----------------------------------------------------------------------------
 
 wire			[15:0]	udp_length;
-assign udp_length = data_len + 16'd8;
+assign udp_length = i_data_len + 16'd8;
 wire			[15:0]	udp_crc;
 assign udp_crc = 16'd0;
 
@@ -238,7 +179,7 @@ always @ (posedge clk or negedge rst_n) begin
 		calc_crc_flag <= 1'b0;
 	else
 		if(new_state != state) begin
-			if(new_state == SEND_DST_MAC)
+			if(new_state == SEND_HEADER)
 				calc_crc_flag <= 1'b1;
 			else 
 				if(new_state == WAIT_FOR_CRC32)

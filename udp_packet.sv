@@ -2,7 +2,7 @@ module udp_packet(
 	input						rst_n,
 	input						clk,
 	
-	output					o_tx_en,
+	output reg				o_tx_en,
 	output	[7:0]			o_tx_data,
 	
 	input		[47:0]		i_src_mac,
@@ -30,7 +30,7 @@ module udp_packet(
 
 assign o_state = state;
 assign o_send_state = send_state;
-assign o_crc_calc = calc_crc32;
+assign o_crc_calc = ccrc32;
 
 assign o_ready = start;
 //----------------------------------------------------------------------------
@@ -63,13 +63,13 @@ reg			[15:0]		udp_len;
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n) begin
-		src_mac = 48'h0023543c471b;
-		dst_mac = 48'h0c54a5312485;
-		src_ip <= 32'h0A000064;
-		dst_ip <= 32'h0A000002;
-		src_port <= 16'd5152;
-		dst_port <= 16'd2179;
-		udp_len <= 16'd16;
+		dst_mac <= 48'hd8d38526c578; //48'h0023543c471b;
+		src_mac <= 48'h0023543c471b; // 48'h0c54a5312485;
+		src_ip <= 32'hc0a84d21; //32'h0A000064;
+		dst_ip <= 32'hc0a84dd9; //32'h0A000002;
+		dst_port <= 16'hc350; //16'd5152;
+		src_port <= 16'hc360; //16'd2179;
+		udp_len <= 16'd18; //16'd16;
 	end
 	else 
 		if(start & ready) begin
@@ -80,13 +80,15 @@ always_ff @ (posedge clk or negedge rst_n)
 //			src_port <= i_src_port;
 //			dst_port <= i_dst_port;
 //			udp_len <= i_udp_len;
-			src_mac = 48'h0023543c471b;
-			dst_mac = 48'h0c54a5312485;
-			src_ip <= 32'h0A000064;
-			dst_ip <= 32'h0A000002;
-			src_port <= 16'd5152;
-			dst_port <= 16'd2179;
-			udp_len <= 16'd16;
+
+			dst_mac <= 48'hd8d38526c578; //48'h0023543c471b;
+			src_mac <= 48'h0023543c471b; // 48'h0c54a5312485;
+			src_ip <= 32'hc0a84d21; //32'h0A000064;
+			dst_ip <= 32'hc0a84dd9; //32'h0A000002;
+			dst_port <= 16'hc350; //16'd5152;
+			src_port <= 16'hc360; //16'd2179;
+			udp_len <= 16'd18; //16'd16;
+			
 		end
 
 //----------------------------------------------------------------------------
@@ -206,7 +208,7 @@ always_comb begin
 		5'h13: ds_data = dst_port;
 		5'h14: ds_data = src_port;
 		
-		5'h15: ds_data = udp_len;
+		5'h15: ds_data = udp_len + 16'd8;
 		5'h16: ds_data = udp_crc;
 	endcase
 end
@@ -243,10 +245,10 @@ reg			[15:0]		udp_count;
 wire							udp_inc;
 
 wire							tx_en;
-wire							calc_crc32;
+wire							ccrc32;
 
 reg			[7:0]			udp_stream;
-always_ff @ (posedge clk) udp_stream <= i_udp_stream;
+always_ff @ (posedge clk) udp_stream <= 8'h00; //i_udp_stream;
 
 always_ff @ (posedge clk or negedge rst_n)
 	if(~rst_n)
@@ -255,27 +257,40 @@ always_ff @ (posedge clk or negedge rst_n)
 		send_state <= next_send_state;
 
 always_comb begin
-	o_tx_data = 8'h00;
+	w_tx_data = 8'h00;
 	next_send_state = send_state;
 	prm_inc = 1'b0;
 	crc_inc = 1'b0;
 	udp_inc = 1'b0;
 	fifo_rd = 1'b0;
-	tx_en = 1'b0;
-	calc_crc32 = 1'b0;
+	w_tx_en = 1'b1;
+	ccrc32 = 1'b0;
 	sender_ready = 1'b0;
 	o_udp_rd = 1'b0;
 	case(send_state)
-		3'h00: {tx_en, calc_crc32, next_send_state} = (state >= 5'h02) ? {1'b0, 1'b0, 3'h01} : {1'b0, 1'b0, 3'h00}; 
-		3'h01: {calc_crc32, prm_inc, next_send_state, o_tx_data} = (prm_count != 3'h07) ? {1'b0, 1'b1, 3'h01, 8'h55} : {1'b0, 1'b1, 3'h02, 8'hD5};
-		3'h02: {o_udp_rd, calc_crc32, fifo_rd, udp_inc, crc_inc, next_send_state, o_tx_data} = (~fifo_tx_empty) ? {1'b0, 1'b1, 1'b1, 1'b0, 1'b0, 3'h02, fifo_tx_data} : 
+		3'h00: {w_tx_en, ccrc32, next_send_state} = (state >= 5'h02) ? {1'b1, 1'b0, 3'h01} : {1'b0, 1'b0, 3'h00}; 
+		3'h01: {ccrc32, prm_inc, next_send_state, w_tx_data} = (prm_count != 3'h07) ? {1'b0, 1'b1, 3'h01, 8'h55} : {1'b0, 1'b1, 3'h02, 8'hD5};
+		3'h02: {o_udp_rd, ccrc32, fifo_rd, udp_inc, crc_inc, next_send_state, w_tx_data} = (~fifo_tx_empty) ? {1'b0, 1'b1, 1'b1, 1'b0, 1'b0, 3'h02, fifo_tx_data} : 
 						((|udp_len) ? {1'b1, 1'b1, 1'b0, 1'b1, 1'b0, 3'h03, udp_stream} : {1'b0, 1'b0, 1'b0, 1'b0, 1'b1, 3'h04, crc32[7:0]});
-		3'h03: {o_udp_rd, calc_crc32, udp_inc, crc_inc, next_send_state, o_tx_data} = (udp_count != udp_len) ? {1'b1, 1'b1, 1'b1, 1'b0, 3'h03, udp_stream} : 
+		3'h03: {o_udp_rd, ccrc32, udp_inc, crc_inc, next_send_state, w_tx_data} = (udp_count != udp_len) ? {1'b1, 1'b1, 1'b1, 1'b0, 3'h03, udp_stream} : 
 						{1'b0, 1'b0, 1'b0, 1'b1, 3'h04, crc32[7:0]};
-		3'h04: {tx_en, calc_crc32, crc_inc, next_send_state, o_tx_data} = (crc_count != 3'h04) ? {1'b1, 1'b0, 1'b1, 3'h04, crc32[7:0]} : {1'b0, 1'b0, 1'b0, 3'h05, 8'h00};
-		3'h05: {tx_en, , sender_ready, next_send_state} = (state == 1) ? {1'b0, 1'b0, 1'b1, 3'h00} : {1'b0, 1'b0, 1'b1, 3'h05};
+		3'h04: {w_tx_en, ccrc32, crc_inc, next_send_state, w_tx_data} = (crc_count != 3'h04) ? {1'b1, 1'b0, 1'b1, 3'h04, crc32[7:0]} : {1'b1, 1'b0, 1'b0, 3'h05, 8'h00};
+		3'h05: {w_tx_en, , sender_ready, next_send_state} = (state == 1) ? {1'b0, 1'b0, 1'b1, 3'h00} : {1'b0, 1'b0, 1'b1, 3'h05};
 	endcase
 end
+
+wire			[7:0]			w_tx_data;
+reg			[7:0]			r_tx_data;
+wire							w_tx_en;
+reg			[0:0]			r_tx_en;
+
+always_ff @ (posedge clk) begin
+	r_tx_data <= w_tx_data;
+	r_tx_en <= w_tx_en;
+end
+
+assign o_tx_data = r_tx_data;
+assign o_tx_en = r_tx_en;
 
 always_ff @ (posedge clk)
 	if(prm_inc) 
@@ -295,7 +310,7 @@ always_ff @ (posedge clk)
 	else
 		udp_count <= 16'h0000;
 
-assign o_tx_en = (send_state >= 3'h01 && send_state <= 3'h04) ? 1'b1 : 1'b0;
+//assign o_tx_en = (send_state >= 3'h01 && send_state <= 3'h04) ? 1'b1 : 1'b0;
 
 // ===========================================================================
 // CRC 32
@@ -318,14 +333,14 @@ end
 
 wire		[31:0]		crc32;
 
-assign o_crc_data = calc_crc32 ? o_tx_data : 8'hFF;
+assign o_crc_data = ccrc32 ? w_tx_data : 8'hFF;
 
 calc_crc32 u_crc32(
 	.rst_n(rst_n),
 	.clk(clk),
-	.i_calc(calc_crc32),
-	.i_vl(o_tx_en),
-	.i_data(o_tx_data),
+	.i_calc(ccrc32),
+	.i_vl(w_tx_en),
+	.i_data(w_tx_data),
 	.o_crc32(crc32)
 );
 
